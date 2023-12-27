@@ -1,3 +1,5 @@
+import sys
+sys.path[0]='/kaggle/working/CPR'
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
@@ -7,7 +9,6 @@ from networks.decoder import build_decoder
 from networks.backbone import build_backbone
 
 from tool import pyutils
-import sys
 import torch.sparse as sparse
 
 class DeepLab(nn.Module):
