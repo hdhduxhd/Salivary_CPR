@@ -1,3 +1,5 @@
+import sys
+sys.path[0]='/kaggle/working/CPR'
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
