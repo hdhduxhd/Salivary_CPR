@@ -71,6 +71,8 @@ if __name__ == "__main__":
     model.eval()
     input = torch.rand(1, 3, 513, 513)
     output = model(input)
-    print(output.size())
+    print(output[0].size())
+    print(output[1].size())
+    print(output[2].size())
 
 
