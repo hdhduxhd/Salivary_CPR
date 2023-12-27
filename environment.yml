@@ -1,4 +1,4 @@
-name: base
+name: cpr
 channels:
   - pytorch
   - conda-forge
