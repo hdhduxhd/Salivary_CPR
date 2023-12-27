@@ -1,10 +1,10 @@
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from networks.sync_batchnorm.batchnorm import SynchronizedBatchNorm2d
-from networks.aspp import build_aspp
-from networks.decoder import build_decoder
-from networks.backbone import build_backbone
+from CPR.networks.sync_batchnorm.batchnorm import SynchronizedBatchNorm2d
+from CPR.networks.aspp import build_aspp
+from CPR.networks.decoder import build_decoder
+from CPR.networks.backbone import build_backbone
 
 from tool import pyutils
 import sys
