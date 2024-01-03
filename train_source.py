@@ -2,6 +2,9 @@ from datetime import datetime
 import os
 import os.path as osp
 
+import sys
+sys.path[0]='/kaggle/working/CPR'
+
 # PyTorch includes
 import torch
 from torchvision import transforms
