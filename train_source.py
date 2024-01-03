@@ -109,6 +109,7 @@ def main():
 
     os.environ['CUDA_VISIBLE_DEVICES'] = str(args.gpu)
     cuda = torch.cuda.is_available()
+    print("cuda:",cuda)
 
     torch.manual_seed(1337)
     if cuda:
