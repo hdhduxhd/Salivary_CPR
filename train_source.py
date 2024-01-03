@@ -26,7 +26,7 @@ def main():
     parser = argparse.ArgumentParser(
             formatter_class=argparse.ArgumentDefaultsHelpFormatter,
         )
-    parser.add_argument('-g', '--gpu', type=int, default=7, help='gpu id')
+    parser.add_argument('-g', '--gpu', type=int, default=0, help='gpu id')
     parser.add_argument('--resume', default=None, help='checkpoint path')
 
     # configurations (same configuration as original work)
