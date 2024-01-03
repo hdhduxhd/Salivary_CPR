@@ -73,7 +73,7 @@ def main():
     )
     parser.add_argument(
         '--data-dir',
-        default='../../Data/Fundus',
+        default='/kaggle/input/fundus/Fundus',
         help='data root path'
     )
     parser.add_argument(
