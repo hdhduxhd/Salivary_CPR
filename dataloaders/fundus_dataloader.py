@@ -1,5 +1,7 @@
 from __future__ import print_function, division
 import os
+import sys
+sys.path[0]='/kaggle/working/CPR'
 from PIL import Image
 import numpy as np
 from torch.utils.data import Dataset
