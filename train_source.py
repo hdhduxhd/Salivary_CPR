@@ -32,10 +32,10 @@ def main():
     # configurations (same configuration as original work)
     # https://github.com/shelhamer/fcn.berkeleyvision.org
     parser.add_argument(
-        '--datasetS', type=str, default='Domain1', help='test folder id contain images ROIs to test'
+        '--datasetS', type=str, default='west', help='test folder id contain images to test'
     )#default='Domain4'
     parser.add_argument(
-        '--datasetT', type=str, default='Domain1', help='refuge / Drishti-GS/ RIM-ONE_r3'
+        '--datasetT', type=str, default='west', help='/kaggle/input/dataset/west'
     )
     parser.add_argument(
         '--batch-size', type=int, default=8, help='batch size for training the model'
@@ -73,7 +73,7 @@ def main():
     )
     parser.add_argument(
         '--data-dir',
-        default='/kaggle/input/fundus/Fundus',
+        default='/kaggle/input/dataset',
         help='data root path'
     )
     parser.add_argument(
@@ -103,13 +103,12 @@ def main():
     args.out = osp.join(here, 'logs', args.datasetS, now.strftime('%Y%m%d_%H%M%S.%f'))
 
     os.makedirs(args.out)
-    with open(osp.join(args.out, 'config.yaml'), 'w') as f:
-        yaml.safe_dump(args.__dict__, f, default_flow_style=False)
+    # with open(osp.join(args.out, 'config.yaml'), 'w') as f:
+    #     yaml.safe_dump(args.__dict__, f, default_flow_style=False)
 
 
     os.environ['CUDA_VISIBLE_DEVICES'] = str(args.gpu)
     cuda = torch.cuda.is_available()
-    print("cuda:",cuda)
 
     torch.manual_seed(1337)
     if cuda:
@@ -136,17 +135,22 @@ def main():
         tr.ToTensor()
     ])
 
-    domain = DL.FundusSegmentation(base_dir=args.data_dir, dataset=args.datasetS, split='train/ROIs', transform=composed_transforms_tr)
-    domain_loaderS = DataLoader(domain, batch_size=args.batch_size, shuffle=True, num_workers=2, pin_memory=True)
+    domain = DL.FundusSegmentation(base_dir=args.data_dir, dataset=args.datasetS, transform=composed_transforms_tr)
+    train_ratio = 0.7
+    train_size = int(train_ratio * len(domain))
+    test_size = len(domain) - train_size
+    domain_S, domain_val = torch.utils.data.random_split(domain, [train_size, test_size])
+    
+    domain_loaderS = DataLoader(domain_S, batch_size=args.batch_size, shuffle=True, num_workers=2, pin_memory=True)
+    # domain_T = DL.FundusSegmentation(base_dir=args.data_dir, dataset=args.datasetT, split='train/ROIs', transform=composed_transforms_tr)
+    domain_loaderT = DataLoader(domain_S, batch_size=args.batch_size, shuffle=False, num_workers=2, pin_memory=True)
 
-    domain_T = DL.FundusSegmentation(base_dir=args.data_dir, dataset=args.datasetT, split='train/ROIs', transform=composed_transforms_tr)
-    domain_loaderT = DataLoader(domain_T, batch_size=args.batch_size, shuffle=False, num_workers=2, pin_memory=True)
-
-    domain_val = DL.FundusSegmentation(base_dir=args.data_dir, dataset=args.datasetS, split='test/ROIs', transform=composed_transforms_ts)
+    domain_val._change_transform(composed_transforms_ts)
+    # domain_val = DL.FundusSegmentation(base_dir=args.data_dir, dataset=args.datasetS, split='test/ROIs', transform=composed_transforms_ts)
     domain_loader_val = DataLoader(domain_val, batch_size=args.batch_size, shuffle=False, num_workers=2, pin_memory=True)
 
     # 2. model
-    model_gen = DeepLab(num_classes=2, backbone='mobilenet', output_stride=args.out_stride,
+    model_gen = DeepLab(num_classes=1, backbone='mobilenet', output_stride=args.out_stride,
                         sync_bn=args.sync_bn, freeze_bn=args.freeze_bn).cuda()
 
     model_dis = BoundaryDiscriminator().cuda()
