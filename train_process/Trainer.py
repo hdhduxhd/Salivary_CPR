@@ -135,7 +135,7 @@ class Trainer(object):
                 # val_cup_dice += np.sum(dice_cup)
                 val_cup_dice += dice_cup
                 # datanum_cnt += float(dice_cup.shape[0])
-            val_loss /= 135
+            val_loss /= len(self.val_loader)
             # val_cup_dice /= datanum_cnt
             val_cup_dice /= len(self.val_loader.dataset)
             print("val_cup_dice:",val_cup_dice)
