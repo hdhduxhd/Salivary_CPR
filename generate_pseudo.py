@@ -130,7 +130,7 @@ if __name__ == '__main__':
 
             preds = torch.zeros([10, data.shape[0], 1, data.shape[2], data.shape[3]]).cuda()
             features = torch.zeros([10, data.shape[0], 305, 128, 128]).cuda()
-            for i in range(100):##
+            for i in range(10):##
                 with torch.no_grad():
                     preds[i,...], _, features[i,...] = model(data)
             preds1 = torch.sigmoid(preds)
