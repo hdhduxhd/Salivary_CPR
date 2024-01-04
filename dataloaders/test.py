@@ -44,13 +44,13 @@ for (img, lab) in zip(sample['image'][:1], sample['map'][:1]):
     print(lab.unique())
     print(img.shape)
     visualize(
-        image=img.transpose(1, 2, 0).numpy(),
-        gt_mask=lab.transpose(1, 2, 0).numpy(),
+        image=img.transpose((1, 2, 0)).numpy(),
+        gt_mask=lab.transpose((1, 2, 0)).numpy(),
     )
 sample = next(iter(domain_loader_val))
 for (img, lab) in zip(sample['image'][:1], sample['map'][:1]):
     print(lab.unique())
     visualize(
-        image=img.transpose(1, 2, 0).numpy(),
-        gt_mask=lab.transpose(1, 2, 0).numpy(),
+        image=img.transpose((1, 2, 0)).numpy(),
+        gt_mask=lab.transpose((1, 2, 0)).numpy(),
     )
