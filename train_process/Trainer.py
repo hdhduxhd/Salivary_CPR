@@ -86,7 +86,7 @@ class Trainer(object):
             "architecture": "deeplab",
             "backbone": "mobilenet",
             "dataset": "west",
-            "epochs": self.max_epoch,
+            "epochs": max_epoch,
             }
         )
 
