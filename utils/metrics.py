@@ -98,9 +98,9 @@ def hd_numpy(binary_segmentation, binary_gt_label, get_hd):
 #     return dice_coefficient_numpy(pred, target)
 
 def dice_coeff(pred, target):
-    target = target.data.cpu()[:,0,:,:]
+    target = target[:,0,:,:]
     pred = torch.sigmoid(pred)
-    pred = pred.data.cpu()[:,0,:,:]
+    pred = pred[:,0,:,:]
     smooth = 1e-5
     num = pred.size(0)
     m1 = pred.view(num, -1)  # Flatten
