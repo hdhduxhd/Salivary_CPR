@@ -99,6 +99,7 @@ if __name__ == '__main__':
     model = DeepLab(num_classes=1, backbone='mobilenet', output_stride=args.out_stride, sync_bn=args.sync_bn, freeze_bn=args.freeze_bn)
 
     if torch.cuda.is_available():
+        print(torch.cuda.is_available())
         model = model.cuda()
     print('==> Loading %s model file: %s' %
           (model.__class__.__name__, model_file))
