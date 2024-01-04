@@ -38,7 +38,7 @@ def main():
         '--datasetT', type=str, default='west', help='/kaggle/input/dataset/west'
     )
     parser.add_argument(
-        '--batch-size', type=int, default=32, help='batch size for training the model'
+        '--batch-size', type=int, default=8, help='batch size for training the model'
     )
     parser.add_argument(
         '--group-num', type=int, default=1, help='group number for group normalization'
