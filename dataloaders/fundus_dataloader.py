@@ -11,14 +11,29 @@ import random
 
 def GetValidTest(base_dir,
                  dataset,
-                 split='test/ROIs',
+                 split='',
                  valid_ratio=0.25):
     image_list = []
-    image_dir = os.path.join(base_dir, dataset, split, 'image')
-    imagelist = glob(image_dir + "/*.png")
-    for image_path in imagelist:
-        gt_path = image_path.replace('image', 'mask')
-        image_list.append({'image': image_path, 'label': gt_path, 'id': None})
+    root_folder = os.path.join(self._base_dir, dataset,split)
+    # 遍历根目录下的所有文件夹
+    for folder_name in os.listdir(root_folder):
+        folder_path = os.path.join(root_folder, folder_name)
+        # 检查是否为文件夹
+        if os.path.isdir(folder_path):
+            image_folder = os.path.join(folder_path, 'image')
+            # 检查image文件夹是否存在
+            if os.path.exists(image_folder):
+                # 遍历image文件夹下的所有图片文件
+                for image_file in os.listdir(image_folder):
+                    image_path = os.path.join(image_folder, image_file)
+                    gt_path = image_path.replace('image', 'mask_single')
+                    image_list.append({'image': image_path, 'label': gt_path, 'id': None})
+    
+    # image_dir = os.path.join(base_dir, dataset, split, 'image')
+    # imagelist = glob(image_dir + "/*.png")
+    # for image_path in imagelist:
+    #     gt_path = image_path.replace('image', 'mask')
+    #     image_list.append({'image': image_path, 'label': gt_path, 'id': None})
     
     shuffled_indices = np.random.permutation(len(image_list))
     valid_set_size = int(len(image_list) * valid_ratio)
@@ -38,8 +53,8 @@ class FundusSegmentation(Dataset):
 
     def __init__(self,
                  base_dir=Path.db_root_dir('fundus'),
-                 dataset='refuge',
-                 split='train',
+                 dataset='west',
+                 split='',
                  testid=None,
                  transform=None,
                  image_list=None
@@ -59,28 +74,29 @@ class FundusSegmentation(Dataset):
             self.label_pool = []
             self.img_name_pool = []
 
-            self._image_dir = os.path.join(self._base_dir, dataset, split, 'image')
-            print(self._image_dir)
-            imagelist = glob(self._image_dir + "/*.png")
-            for image_path in imagelist:
-                gt_path = image_path.replace('image', 'mask')
-                self.image_list.append({'image': image_path, 'label': gt_path, 'id': testid})
-            ###
-            '''
-            if split=='train/ROIs':
-                self._image_dir = os.path.join(self._base_dir, 'Domain3', split, 'image')
-                print(self._image_dir)
-                imagelist = glob(self._image_dir + "/*.png")
-                for image_path in imagelist:
-                    gt_path = image_path.replace('image', 'mask')
-                    self.image_list.append({'image': image_path, 'label': gt_path, 'id': testid})
-            '''
-            ###
-            #self.image_list = self.image_list[:90]
+            root_folder = os.path.join(self._base_dir, dataset, self.split)
+            # 遍历根目录下的所有文件夹
+            for folder_name in os.listdir(root_folder):
+                folder_path = os.path.join(root_folder, folder_name)
+                # 检查是否为文件夹
+                if os.path.isdir(folder_path):
+                    image_folder = os.path.join(folder_path, 'image')
+                    # 检查image文件夹是否存在
+                    if os.path.exists(image_folder):
+                        # 遍历image文件夹下的所有图片文件
+                        for image_file in os.listdir(image_folder):
+                            image_path = os.path.join(image_folder, image_file)
+                            gt_path = image_path.replace('image', 'mask_single')
+                            self.image_list.append({'image': image_path, 'label': gt_path, 'id': testid})
+            
+            # self._image_dir = os.path.join(self._base_dir, dataset, split, 'image')
+            # imagelist = glob(self._image_dir + "/*.png")
+            # for image_path in imagelist:
+            #     gt_path = image_path.replace('image', 'mask')
+            #     self.image_list.append({'image': image_path, 'label': gt_path, 'id': testid})
             self.transform = transform
-            # self._read_img_into_memory()
             # Display stats
-            print('Number of images in {}: {:d}'.format(split, len(self.image_list)))
+            print('Number of images in {}: {:d}'.format(root_folder, len(self.image_list)))
         else:
             self.image_list = image_list
             self.transform = transform
@@ -105,6 +121,9 @@ class FundusSegmentation(Dataset):
             anco_sample = self.transform(anco_sample)
 
         return anco_sample
+
+    def _change_transform(self,transform):
+        self.transform = transform
 
     def _read_img_into_memory(self):
 
