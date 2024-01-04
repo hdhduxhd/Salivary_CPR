@@ -41,14 +41,14 @@ domain_loader_val = DataLoader(domain_val, batch_size=8, shuffle=False, num_work
 
 sample = next(iter(domain_loaderS))
 for (img, lab) in zip(sample['image'][:1], sample['map'][:1]):
-    print(label.unique())
+    print(lab.unique())
     visualize(
         image=img.numpy(),
         gt_mask=lab.numpy(),
     )
 sample = next(iter(domain_loader_val))
-for (img, lab) in zip(sample['image'][:3], sample['map'][:3]):
-    print(label.unique())
+for (img, lab) in zip(sample['image'][:1], sample['map'][:1]):
+    print(lab.unique())
     visualize(
         image=img.numpy(),
         gt_mask=lab.numpy(),
