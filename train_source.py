@@ -145,7 +145,7 @@ def main():
     # domain_T = DL.FundusSegmentation(base_dir=args.data_dir, dataset=args.datasetT, split='train/ROIs', transform=composed_transforms_tr)
     domain_loaderT = DataLoader(domain_S, batch_size=args.batch_size, shuffle=False, num_workers=2, pin_memory=True)
 
-    domain_val._change_transform(composed_transforms_ts)
+    domain_val.dataset.transform = composed_transforms_ts
     # domain_val = DL.FundusSegmentation(base_dir=args.data_dir, dataset=args.datasetS, split='test/ROIs', transform=composed_transforms_ts)
     domain_loader_val = DataLoader(domain_val, batch_size=args.batch_size, shuffle=False, num_workers=2, pin_memory=True)
 
