@@ -28,6 +28,8 @@ def GetValidTest(base_dir,
                     image_path = os.path.join(image_folder, image_file)
                     gt_path = image_path.replace('image', 'mask_single')
                     image_list.append({'image': image_path, 'label': gt_path, 'id': None})
+                    #每个病例只取一张
+                    break
     
     # image_dir = os.path.join(base_dir, dataset, split, 'image')
     # imagelist = glob(image_dir + "/*.png")
@@ -88,6 +90,7 @@ class FundusSegmentation(Dataset):
                             image_path = os.path.join(image_folder, image_file)
                             gt_path = image_path.replace('image', 'mask_single')
                             self.image_list.append({'image': image_path, 'label': gt_path, 'id': testid})
+                            break
             
             # self._image_dir = os.path.join(self._base_dir, dataset, split, 'image')
             # imagelist = glob(self._image_dir + "/*.png")
