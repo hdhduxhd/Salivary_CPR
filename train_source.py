@@ -47,7 +47,7 @@ def main():
         '--max-epoch', type=int, default=200, help='max epoch'
     )
     parser.add_argument(
-        '--stop-epoch', type=int, default=1, help='stop epoch'
+        '--stop-epoch', type=int, default=20, help='stop epoch'
     )
     parser.add_argument(
         '--warmup-epoch', type=int, default=-1, help='warmup epoch begin train GAN'
