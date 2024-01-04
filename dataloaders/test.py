@@ -7,7 +7,6 @@ from torchvision import transforms
 from torch.utils.data import DataLoader
 from dataloaders import fundus_dataloader as DL
 from dataloaders import custom_transforms as tr
-from utils.Utils import visualize
 
 composed_transforms_tr = transforms.Compose([
     #tr.Resize(512),###
