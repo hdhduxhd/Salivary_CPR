@@ -42,6 +42,7 @@ domain_loader_val = DataLoader(domain_val, batch_size=8, shuffle=False, num_work
 sample = next(iter(domain_loaderS))
 for (img, lab) in zip(sample['image'][:1], sample['map'][:1]):
     print(lab.unique())
+    print(img.shape)
     visualize(
         image=img.transpose(1, 2, 0).numpy(),
         gt_mask=lab.transpose(1, 2, 0).numpy(),
