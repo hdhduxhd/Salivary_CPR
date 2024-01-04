@@ -448,6 +448,7 @@ class Normalize_tf(object):
         mask = np.zeros_like(__mask)
         mask[__mask > threshold] = 1  # 将大于阈值的像素设置为1
         mask[__mask <= threshold] = 0  # 将小于等于阈值的像素设置为0
+        mask = np.expand_dims(mask, -1)
 
         # mask = to_multilabel(__mask)
         boundary = self.get_boundary(mask) * 255
