@@ -134,12 +134,12 @@ class Trainer(object):
                 dice_cup = dice_coeff(predictions, target_map).item()
                 # val_cup_dice += np.sum(dice_cup)
                 val_cup_dice += dice_cup
-                datanum_cnt += float(dice_cup.shape[0])
+                # datanum_cnt += float(dice_cup.shape[0])
             val_loss /= datanum_cnt
             # val_cup_dice /= datanum_cnt
             val_cup_dice /= len(self.val_loader.dataset)
             print("val_cup_dice:",val_cup_dice)
-            print("datanum_cnt:",datanum_cnt)
+            # print("datanum_cnt:",datanum_cnt)
             metrics.append((val_loss, val_cup_dice))
             wandb.log({"val_loss": val_loss, "val_cup_dice": val_cup_dice})
 
