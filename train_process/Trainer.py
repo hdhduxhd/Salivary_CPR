@@ -11,6 +11,7 @@ import torch
 import torch.nn.functional as F
 
 from tensorboardX import SummaryWriter
+import wandb
 
 import tqdm
 import socket
@@ -63,28 +64,38 @@ class Trainer(object):
             'iteration',
             'train/loss_seg',
             'train/cup_dice',
-            'train/disc_dice',
             'train/loss_adv',
             'train/loss_D_same',
             'train/loss_D_diff',
             'valid/loss_CE',
             'valid/cup_dice',
-            'valid/disc_dice',
             'elapsed_time',
         ]
         if not osp.exists(osp.join(self.out, 'log.csv')):
             with open(osp.join(self.out, 'log.csv'), 'w') as f:
                 f.write(','.join(self.log_headers) + '\n')
 
-        log_dir = os.path.join(self.out, 'tensorboard',
-                               datetime.now().strftime('%b%d_%H-%M-%S') + '_' + socket.gethostname())
-        self.writer = SummaryWriter(log_dir=log_dir)
+        # start a new wandb run to track this script
+        wandb.init(
+            # set the wandb project where this run will be logged
+            project="Salivary_Seg_CPR",
+            
+            # track hyperparameters and run metadata
+            config={
+            "learning_rate": 0.001,
+            "architecture": "deeplab",
+            "backbone": "mobilenet",
+            "dataset": "west",
+            "epochs": self.max_epoch,
+            }
+        )
 
         self.epoch = 0
         self.iteration = 0
         self.max_epoch = max_epoch
         self.stop_epoch = stop_epoch if stop_epoch is not None else max_epoch
-        self.best_disc_dice = 0.0
+        self.early_stop = 6
+        self.count = 0
         self.running_loss_tr = 0.0
         self.running_adv_diff_loss = 0.0
         self.running_adv_same_loss = 0.0
@@ -98,7 +109,6 @@ class Trainer(object):
 
         val_loss = 0.0
         val_cup_dice = 0.0
-        val_disc_dice = 0.0
         datanum_cnt = 0.0
         metrics = []
         with torch.no_grad():
@@ -121,21 +131,19 @@ class Trainer(object):
                     raise ValueError('loss is nan while validating')
                 val_loss += loss_data
 
-                dice_cup, dice_disc = dice_coeff_2label(predictions, target_map)
+                dice_cup = dice_coeff(predictions, target_map)
                 val_cup_dice += np.sum(dice_cup)
-                val_disc_dice += np.sum(dice_disc)
                 datanum_cnt += float(dice_cup.shape[0])
             val_loss /= datanum_cnt
             val_cup_dice /= datanum_cnt
-            val_disc_dice /= datanum_cnt
-            metrics.append((val_loss, val_cup_dice, val_disc_dice))
-            self.writer.add_scalar('val_data/loss_CE', val_loss, self.epoch * (len(self.domain_loaderS)))
-            self.writer.add_scalar('val_data/val_CUP_dice', val_cup_dice, self.epoch * (len(self.domain_loaderS)))
-            self.writer.add_scalar('val_data/val_DISC_dice', val_disc_dice, self.epoch * (len(self.domain_loaderS)))
+            metrics.append((val_loss, val_cup_dice))
+            wandb.log({"val_loss": val_loss, "val_cup_dice": val_cup_dice})
 
-            mean_dice = val_cup_dice + val_disc_dice
+            mean_dice = val_cup_dice
             is_best = mean_dice > self.best_mean_dice
+            self.count += 1
             if is_best:
+                self.count = 0
                 self.best_epoch = self.epoch + 1
                 self.best_mean_dice = mean_dice
 
@@ -153,25 +161,8 @@ class Trainer(object):
                     'learning_rate_dis': get_lr(self.optim_dis),
                     'learning_rate_dis2': get_lr(self.optim_dis2),
                     'best_mean_dice': self.best_mean_dice,
-                }, osp.join(self.out, 'checkpoint_%d.pth.tar' % self.best_epoch))
-            else:
-                if (self.epoch + 1) % 10 == 0:
-                    torch.save({
-                        'epoch': self.epoch,
-                    'iteration': self.iteration,
-                    'arch': self.model_gen.__class__.__name__,
-                    'optim_state_dict': self.optim_gen.state_dict(),
-                    'optim_dis_state_dict': self.optim_dis.state_dict(),
-                    'optim_dis2_state_dict': self.optim_dis2.state_dict(),
-                    'model_state_dict': self.model_gen.state_dict(),
-                    'model_dis_state_dict': self.model_dis.state_dict(),
-                    'model_dis2_state_dict': self.model_dis2.state_dict(),
-                    'learning_rate_gen': get_lr(self.optim_gen),
-                    'learning_rate_dis': get_lr(self.optim_dis),
-                    'learning_rate_dis2': get_lr(self.optim_dis2),
-                    'best_mean_dice': self.best_mean_dice,
-                    }, osp.join(self.out, 'checkpoint_%d.pth.tar' % (self.epoch + 1)))
-
+                }, osp.join(self.out, 'checkpoint_best.pth.tar'))
+                print("Epoch %d:, the best model has been saved." % self.best_epoch)
 
             with open(osp.join(self.out, 'log.csv'), 'a') as f:
                 elapsed_time = (
@@ -181,7 +172,6 @@ class Trainer(object):
                        list(metrics) + [elapsed_time] + ['best model epoch: %d' % self.best_epoch]
                 log = map(str, log)
                 f.write(','.join(log) + '\n')
-            self.writer.add_scalar('best_model_epoch', self.best_epoch, self.epoch * (len(self.domain_loaderS)))
             if training:
                 self.model_gen.train()
                 self.model_dis.train()
@@ -201,7 +191,6 @@ class Trainer(object):
         self.running_dis_same_loss = 0.0
         self.running_total_loss = 0.0
         self.running_cup_dice_tr = 0.0
-        self.running_disc_dice_tr = 0.0
         loss_adv_diff_data = 0
         loss_D_same_data = 0
         loss_D_diff_data = 0
@@ -254,28 +243,7 @@ class Trainer(object):
             loss_seg.backward()
             self.optim_gen.step()
 
-            # write image log
-            if iteration % 30 == 0:
-                grid_image = make_grid(
-                    imageS[0, ...].clone().cpu().data, 1, normalize=True)
-                self.writer.add_image('DomainS/image', grid_image, iteration)
-                grid_image = make_grid(
-                    target_map[0, 0, ...].clone().cpu().data, 1, normalize=True)
-                self.writer.add_image('DomainS/target_cup', grid_image, iteration)
-                grid_image = make_grid(
-                    target_map[0, 1, ...].clone().cpu().data, 1, normalize=True)
-                self.writer.add_image('DomainS/target_disc', grid_image, iteration)
-                grid_image = make_grid(
-                    target_boundary[0, 0, ...].clone().cpu().data, 1, normalize=True)
-                self.writer.add_image('DomainS/target_boundary', grid_image, iteration)
-                grid_image = make_grid(torch.sigmoid(oS)[0, 0, ...].clone().cpu().data, 1, normalize=True)
-                self.writer.add_image('DomainS/prediction_cup', grid_image, iteration)
-                grid_image = make_grid(torch.sigmoid(oS)[0, 1, ...].clone().cpu().data, 1, normalize=True)
-                self.writer.add_image('DomainS/prediction_disc', grid_image, iteration)
-                grid_image = make_grid(torch.sigmoid(boundaryS)[0, 0, ...].clone().cpu().data, 1, normalize=True)
-                self.writer.add_image('DomainS/prediction_boundary', grid_image, iteration)
-
-            self.writer.add_scalar('train_gen/loss_seg', loss_seg_data, iteration)
+            wandb.log({"train_gen/loss_seg": loss_seg_data})
 
             metrics.append((loss_seg_data, loss_adv_diff_data, loss_D_same_data, loss_D_diff_data))
             metrics = np.mean(metrics, axis=0)
@@ -310,6 +278,9 @@ class Trainer(object):
                                  desc='Train', ncols=80):
             self.epoch = epoch
             self.train_epoch()
+            if self.count > self.early_stop:
+                print('Early stop epoch at %d' % (self.epoch+1))
+                break
             if self.stop_epoch == self.epoch:
                 print('Stop epoch at %d' % self.stop_epoch)
                 break
@@ -318,11 +289,11 @@ class Trainer(object):
                 _lr_gen = self.lr_gen * 0.2
                 for param_group in self.optim_gen.param_groups:
                     param_group['lr'] = _lr_gen
-            self.writer.add_scalar('lr_gen', get_lr(self.optim_gen), self.epoch * (len(self.domain_loaderS)))
+            wandb.log({"lr_gen": get_lr(self.optim_gen)})
             # if (self.epoch+1) % self.interval_validate == 0:
             if (self.epoch + 1) % 5 == 0:
                 self.validate()
-        self.writer.close()
+        wandb.finish()
 
 
 
