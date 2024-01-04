@@ -82,20 +82,33 @@ def hd_numpy(binary_segmentation, binary_gt_label, get_hd):
         return 0.0
 
 
+# def dice_coeff(pred, target):
+#     """This definition generalize to real valued pred and target vector.
+#     This should be differentiable.
+#     pred: tensor with first dimension as batch
+#     target: tensor with first dimension as batch
+#     """
+
+#     target = target.data.cpu()
+#     pred = torch.sigmoid(pred)
+#     pred = pred.data.cpu()
+#     pred[pred > 0.5] = 1
+#     pred[pred <= 0.5] = 0
+
+#     return dice_coefficient_numpy(pred, target)
+
 def dice_coeff(pred, target):
-    """This definition generalize to real valued pred and target vector.
-    This should be differentiable.
-    pred: tensor with first dimension as batch
-    target: tensor with first dimension as batch
-    """
-
-    target = target.data.cpu()
+    target = target.data.cpu()[:,0,:,:]
     pred = torch.sigmoid(pred)
-    pred = pred.data.cpu()
-    pred[pred > 0.5] = 1
-    pred[pred <= 0.5] = 0
-
-    return dice_coefficient_numpy(pred, target)
+    pred = pred.data.cpu()[:,0,:,:]
+    smooth = 1e-5
+    num = pred.size(0)
+    m1 = pred.view(num, -1)  # Flatten
+    m2 = target.view(num, -1)  # Flatten
+    intersection = (m1 * m2).sum(1)
+    score = (2. * intersection + smooth) / (m1.sum(1) + m2.sum(1) + smooth)
+    score = score.sum()
+    return score
 
 def dice_coeff_2label(pred, target):
     """This definition generalize to real valued pred and target vector.
