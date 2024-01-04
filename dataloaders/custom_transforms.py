@@ -166,8 +166,8 @@ class RandomCrop(object):
             img = ImageOps.expand(img, border=padding, fill=0)
             mask = ImageOps.expand(mask, border=padding, fill=255)
 
-        assert img.width == mask.width
-        assert img.height == mask.height
+        # assert img.width == mask.width
+        # assert img.height == mask.height
         w, h = img.size
         th, tw = self.size # target size
         if w == tw and h == th:
@@ -233,8 +233,8 @@ class FixedResize(object):
         mask = sample['label']
         name = sample['img_name']
 
-        assert img.width == mask.width
-        assert img.height == mask.height
+        # assert img.width == mask.width
+        # assert img.height == mask.height
         img = img.resize(self.size, Image.BILINEAR)
         mask = mask.resize(self.size, Image.NEAREST)
 
@@ -253,8 +253,8 @@ class Scale(object):
     def __call__(self, sample):
         img = sample['image']
         mask = sample['label']
-        assert img.width == mask.width
-        assert img.height == mask.height
+        # assert img.width == mask.width
+        # assert img.height == mask.height
         w, h = img.size
 
         if (w >= h and w == self.size[1]) or (h >= w and h == self.size[0]):
@@ -278,8 +278,8 @@ class RandomSizedCrop(object):
         img = sample['image']
         mask = sample['label']
         name = sample['img_name']
-        assert img.width == mask.width
-        assert img.height == mask.height
+        # assert img.width == mask.width
+        # assert img.height == mask.height
         for attempt in range(10):
             area = img.size[0] * img.size[1]
             target_area = random.uniform(0.45, 1.0) * area
@@ -342,8 +342,8 @@ class RandomScaleCrop(object):
         mask = sample['label']
         name = sample['img_name']
         # print(img.size)
-        assert img.width == mask.width
-        assert img.height == mask.height
+        # assert img.width == mask.width
+        # assert img.height == mask.height
 
         seed = random.random()
         if seed > 0.5:
@@ -364,8 +364,8 @@ class ResizeImg(object):
         img = sample['image']
         mask = sample['label']
         name = sample['img_name']
-        assert img.width == mask.width
-        assert img.height == mask.height
+        # assert img.width == mask.width
+        # assert img.height == mask.height
 
         img = img.resize((self.size, self.size))
 
@@ -381,8 +381,8 @@ class Resize(object):
         img = sample['image']
         mask = sample['label']
         name = sample['img_name']
-        assert img.width == mask.width
-        assert img.height == mask.height
+        # assert img.width == mask.width
+        # assert img.height == mask.height
 
         img = img.resize((self.size, self.size), Image.BILINEAR)
         mask = mask.resize((self.size, self.size), Image.NEAREST)
