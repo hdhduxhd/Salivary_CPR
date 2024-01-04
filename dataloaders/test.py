@@ -39,18 +39,5 @@ domain_loaderS = DataLoader(domain_S, batch_size=8, shuffle=True, num_workers=2,
 domain_val.dataset.transform = composed_transforms_ts
 domain_loader_val = DataLoader(domain_val, batch_size=8, shuffle=False, num_workers=2, pin_memory=True)
 
-sample = next(iter(domain_loaderS))
-for (img, lab) in zip(sample['image'][:1], sample['map'][:1]):
-    print(lab.unique())
-    print(img.shape)
-    visualize(
-        image=img.numpy().transpose((1, 2, 0)),
-        gt_mask=lab.numpy().transpose((1, 2, 0)),
-    )
-sample = next(iter(domain_loader_val))
-for (img, lab) in zip(sample['image'][:1], sample['map'][:1]):
-    print(lab.unique())
-    visualize(
-        image=img.numpy().transpose((1, 2, 0)),
-        gt_mask=lab.numpy().transpose((1, 2, 0)),
-    )
+def test_dataloader():
+    return domain_loaderS, domain_loader_val
