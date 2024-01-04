@@ -4,6 +4,9 @@
 import argparse
 import os
 import os.path as osp
+import sys
+sys.path[0]='/kaggle/working/CPR'
+
 import torch.nn.functional as F
 
 import matplotlib
@@ -56,7 +59,7 @@ def disenable_dropout(model):
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
-    parser.add_argument('--model-file', type=str, default='./logs/source/checkpoint_185.pth.tar')#D4/checkpoint_170.pth.tar
+    parser.add_argument('--model-file', type=str, default='/kaggle/input/checkpoint-best/checkpoint_best.pth.tar')#D4/checkpoint_170.pth.tar
     parser.add_argument('--dataset', type=str, default='south')#Domain1
     parser.add_argument('--batchsize', type=int, default=32)
     parser.add_argument('--source', type=str, default='west')#Domain4
@@ -76,20 +79,24 @@ if __name__ == '__main__':
 
     # 1. dataset
     composed_transforms_test = transforms.Compose([
-        tr.Resize(128),
+        tr.Resize(512),
         tr.Normalize_tf(),
         tr.ToTensor()
     ])
-    db_train = DL.FundusSegmentation(base_dir=args.data_dir, dataset=args.dataset, split='train/ROIs', transform=composed_transforms_test)
-    db_test = DL.FundusSegmentation(base_dir=args.data_dir, dataset=args.dataset, split='test/ROIs', transform=composed_transforms_test)
-    db_source = DL.FundusSegmentation(base_dir=args.data_dir, dataset=args.source, split='train/ROIs', transform=composed_transforms_test)
+    
+    db = DL.FundusSegmentation(base_dir=args.data_dir, dataset=args.dataset, transform=composed_transforms_test)
+    train_ratio = 0.7
+    train_size = int(train_ratio * len(db))
+    test_size = len(db) - train_size
+    db_train, db_test = torch.utils.data.random_split(db, [train_size, test_size])
+    db_source = DL.FundusSegmentation(base_dir=args.data_dir, dataset=args.source, transform=composed_transforms_test)
     
     train_loader = DataLoader(db_train, batch_size=args.batchsize, shuffle=False, num_workers=1)
     test_loader = DataLoader(db_test, batch_size=args.batchsize, shuffle=False, num_workers=1)
     source_loader = DataLoader(db_source, batch_size=args.batchsize, shuffle=False, num_workers=1)
 
     # 2. model
-    model = DeepLab(num_classes=2, backbone='mobilenet', output_stride=args.out_stride, sync_bn=args.sync_bn, freeze_bn=args.freeze_bn)
+    model = DeepLab(num_classes=1, backbone='mobilenet', output_stride=args.out_stride, sync_bn=args.sync_bn, freeze_bn=args.freeze_bn)
 
     if torch.cuda.is_available():
         model = model.cuda()
@@ -108,12 +115,8 @@ if __name__ == '__main__':
     proto_pseudo_dic = {}
     distance_0_obj_dic = {}
     distance_0_bck_dic = {}
-    distance_1_bck_dic = {}
-    distance_1_obj_dic = {}
     centroid_0_obj_dic = {}
     centroid_0_bck_dic = {}
-    centroid_1_obj_dic = {}
-    centroid_1_bck_dic = {}
     prob_dic = {}
 
     with torch.no_grad():
@@ -125,7 +128,7 @@ if __name__ == '__main__':
                 data, target = data.cuda(), target.cuda()
             data, target = Variable(data), Variable(target)
 
-            preds = torch.zeros([100, data.shape[0], 2, data.shape[2], data.shape[3]]).cuda()
+            preds = torch.zeros([100, data.shape[0], 1, data.shape[2], data.shape[3]]).cuda()
             features = torch.zeros([100, data.shape[0], 305, 128, 128]).cuda()
             for i in range(100):##
                 with torch.no_grad():
@@ -142,49 +145,35 @@ if __name__ == '__main__':
             feature = torch.mean(features,dim=0)
 
             target_0_obj = F.interpolate(pseudo_label[:,0:1,...], size=feature.size()[2:], mode='nearest')
-            target_1_obj = F.interpolate(pseudo_label[:, 1:, ...], size=feature.size()[2:], mode='nearest')
             prediction_small = F.interpolate(prediction, size=feature.size()[2:], mode='bilinear', align_corners=True)
             std_map_small = F.interpolate(std_map, size=feature.size()[2:], mode='bilinear', align_corners=True)
-            target_0_bck = 1.0 - target_0_obj;target_1_bck = 1.0 - target_1_obj
+            target_0_bck = 1.0 - target_0_obj
 
             mask_0_obj = torch.zeros([std_map_small.shape[0], 1, std_map_small.shape[2], std_map_small.shape[3]]).cuda()
             mask_0_bck = torch.zeros([std_map_small.shape[0], 1, std_map_small.shape[2], std_map_small.shape[3]]).cuda()
-            mask_1_obj = torch.zeros([std_map_small.shape[0], 1, std_map_small.shape[2], std_map_small.shape[3]]).cuda()
-            mask_1_bck = torch.zeros([std_map_small.shape[0], 1, std_map_small.shape[2], std_map_small.shape[3]]).cuda()
             mask_0_obj[std_map_small[:, 0:1, ...] < 0.05] = 1.0
             mask_0_bck[std_map_small[:, 0:1, ...] < 0.05] = 1.0
-            mask_1_obj[std_map_small[:, 1:, ...] < 0.05] = 1.0
-            mask_1_bck[std_map_small[:, 1:, ...] < 0.05] = 1.0
             mask_0 = mask_0_obj + mask_0_bck
-            mask_1 = mask_1_obj + mask_1_bck
-            mask = torch.cat((mask_0, mask_1), dim=1)
+            mask = mask_0
 
-            feature_0_obj = feature * target_0_obj*mask_0_obj;feature_1_obj = feature * target_1_obj*mask_1_obj
-            feature_0_bck = feature * target_0_bck*mask_0_bck;feature_1_bck = feature * target_1_bck*mask_1_bck
+            feature_0_obj = feature * target_0_obj*mask_0_obj
+            feature_0_bck = feature * target_0_bck*mask_0_bck
 
             centroid_0_obj = torch.sum(feature_0_obj*prediction_small[:,0:1,...], dim=[0,2,3], keepdim=True)
-            centroid_1_obj = torch.sum(feature_1_obj*prediction_small[:,1:,...], dim=[0,2,3], keepdim=True)
             centroid_0_bck = torch.sum(feature_0_bck*(1.0-prediction_small[:,0:1,...]), dim=[0,2,3], keepdim=True)
-            centroid_1_bck = torch.sum(feature_1_bck*(1.0-prediction_small[:,1:,...]), dim=[0,2,3], keepdim=True)
             target_0_obj_cnt = torch.sum(mask_0_obj*target_0_obj*prediction_small[:,0:1,...], dim=[0,2,3], keepdim=True)
-            target_1_obj_cnt = torch.sum(mask_1_obj*target_1_obj*prediction_small[:,1:,...], dim=[0,2,3], keepdim=True)
             target_0_bck_cnt = torch.sum(mask_0_bck*target_0_bck*(1.0-prediction_small[:,0:1,...]), dim=[0,2,3], keepdim=True)
-            target_1_bck_cnt = torch.sum(mask_1_bck*target_1_bck*(1.0-prediction_small[:,1:,...]), dim=[0,2,3], keepdim=True)
 
-            centroid_0_obj /= target_0_obj_cnt; centroid_1_obj /= target_1_obj_cnt
-            centroid_0_bck /= target_0_bck_cnt; centroid_1_bck /= target_1_bck_cnt
+            centroid_0_obj /= target_0_obj_cnt
+            centroid_0_bck /= target_0_bck_cnt
 
             distance_0_obj = torch.sum(torch.pow(feature - centroid_0_obj, 2), dim=1, keepdim=True)
             distance_0_bck = torch.sum(torch.pow(feature - centroid_0_bck, 2), dim=1, keepdim=True)
-            distance_1_obj = torch.sum(torch.pow(feature - centroid_1_obj, 2), dim=1, keepdim=True)
-            distance_1_bck = torch.sum(torch.pow(feature - centroid_1_bck, 2), dim=1, keepdim=True)
 
             proto_pseudo_0 = torch.zeros([data.shape[0], 1, feature.shape[2], feature.shape[3]]).cuda()
-            proto_pseudo_1 = torch.zeros([data.shape[0], 1, feature.shape[2], feature.shape[3]]).cuda()
 
             proto_pseudo_0[distance_0_obj < distance_0_bck] = 1.0
-            proto_pseudo_1[distance_1_obj < distance_1_bck] = 1.0
-            proto_pseudo = torch.cat((proto_pseudo_0, proto_pseudo_1), dim=1)
+            proto_pseudo = proto_pseudo_0
             proto_pseudo = F.interpolate(proto_pseudo, size=data.size()[2:], mode='nearest')
 
             debugc = 1
@@ -194,12 +183,8 @@ if __name__ == '__main__':
             proto_pseudo = proto_pseudo.detach().cpu().numpy()
             distance_0_obj = distance_0_obj.detach().cpu().numpy()
             distance_0_bck = distance_0_bck.detach().cpu().numpy()
-            distance_1_obj = distance_1_obj.detach().cpu().numpy()
-            distance_1_bck = distance_1_bck.detach().cpu().numpy()
             centroid_0_obj = centroid_0_obj.detach().cpu().numpy()
             centroid_0_bck = centroid_0_bck.detach().cpu().numpy()
-            centroid_1_obj = centroid_1_obj.detach().cpu().numpy()
-            centroid_1_bck = centroid_1_bck.detach().cpu().numpy()
             prob = prob.detach().cpu().numpy()
             for i in range(prediction.shape[0]):
                 pseudo_label_dic[img_name[i]] = pseudo_label[i]
@@ -207,37 +192,28 @@ if __name__ == '__main__':
                 proto_pseudo_dic[img_name[i]] = proto_pseudo[i]
                 distance_0_obj_dic[img_name[i]] = distance_0_obj[i]
                 distance_0_bck_dic[img_name[i]] = distance_0_bck[i]
-                distance_1_obj_dic[img_name[i]] = distance_1_obj[i]
-                distance_1_bck_dic[img_name[i]] = distance_1_bck[i]
                 centroid_0_obj_dic[img_name[i]] = centroid_0_obj
                 centroid_0_bck_dic[img_name[i]] = centroid_0_bck
-                centroid_1_obj_dic[img_name[i]] = centroid_1_obj
-                centroid_1_bck_dic[img_name[i]] = centroid_1_bck
                 prob_dic[img_name[i]] = prob[i]
 
     if not osp.exists('./generate_pseudo'):
         os.mkdir('./generate_pseudo')
     
-    if args.dataset=="Domain3":
-        np.savez('./generate_pseudo/pseudolabel_D3', pseudo_label_dic, uncertain_dic, proto_pseudo_dic, prob_dic,
-                         distance_0_obj_dic, distance_0_bck_dic, distance_1_obj_dic, distance_1_bck_dic,
-                         centroid_0_obj_dic, centroid_0_bck_dic, centroid_1_obj_dic, centroid_1_bck_dic
+    if args.dataset=="west":
+        np.savez('./generate_pseudo/pseudolabel_west', pseudo_label_dic, uncertain_dic, proto_pseudo_dic, prob_dic,
+                         distance_0_obj_dic, distance_0_bck_dic,
+                         centroid_0_obj_dic, centroid_0_bck_dic
                          )
 
-    elif args.dataset=="Domain2":
-        np.savez('./generate_pseudo/pseudolabel_D2', pseudo_label_dic, uncertain_dic, proto_pseudo_dic, prob_dic,
-                         distance_0_obj_dic, distance_0_bck_dic, distance_1_obj_dic, distance_1_bck_dic,
-                         centroid_0_obj_dic, centroid_0_bck_dic, centroid_1_obj_dic, centroid_1_bck_dic
+    elif args.dataset=="south":
+        np.savez('./generate_pseudo/pseudolabel_south', pseudo_label_dic, uncertain_dic, proto_pseudo_dic, prob_dic,
+                         distance_0_obj_dic, distance_0_bck_dic,
+                         centroid_0_obj_dic, centroid_0_bck_dic
                          )
-    elif args.dataset=="Domain1":
-        np.savez('./generate_pseudo/pseudolabel_D1', pseudo_label_dic, uncertain_dic, proto_pseudo_dic, prob_dic,
-                         distance_0_obj_dic, distance_0_bck_dic, distance_1_obj_dic, distance_1_bck_dic,
-                         centroid_0_obj_dic, centroid_0_bck_dic, centroid_1_obj_dic, centroid_1_bck_dic
-                         )
-    elif args.dataset=="Domain4":
-        np.savez('./generate_pseudo/pseudolabel_D4', pseudo_label_dic, uncertain_dic, proto_pseudo_dic, prob_dic,
-                         distance_0_obj_dic, distance_0_bck_dic, distance_1_obj_dic, distance_1_bck_dic,
-                         centroid_0_obj_dic, centroid_0_bck_dic, centroid_1_obj_dic, centroid_1_bck_dic
+    elif args.dataset=="north":
+        np.savez('./generate_pseudo/pseudolabel_north', pseudo_label_dic, uncertain_dic, proto_pseudo_dic, prob_dic,
+                         distance_0_obj_dic, distance_0_bck_dic,
+                         centroid_0_obj_dic, centroid_0_bck_dic
                          )
 
 
