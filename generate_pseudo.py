@@ -128,8 +128,8 @@ if __name__ == '__main__':
                 data, target = data.cuda(), target.cuda()
             data, target = Variable(data), Variable(target)
 
-            preds = torch.zeros([100, data.shape[0], 1, data.shape[2], data.shape[3]]).cuda()
-            features = torch.zeros([100, data.shape[0], 305, 128, 128]).cuda()
+            preds = torch.zeros([10, data.shape[0], 1, data.shape[2], data.shape[3]]).cuda()
+            features = torch.zeros([10, data.shape[0], 305, 128, 128]).cuda()
             for i in range(100):##
                 with torch.no_grad():
                     preds[i,...], _, features[i,...] = model(data)
