@@ -291,8 +291,8 @@ class Trainer(object):
                     param_group['lr'] = _lr_gen
             wandb.log({"lr_gen": get_lr(self.optim_gen)})
             # if (self.epoch+1) % self.interval_validate == 0:
-            if (self.epoch + 1) % 5 == 0:
-                self.validate()
+            # if (self.epoch + 1) % 5 == 0:
+            self.validate()
         wandb.finish()
 
 
