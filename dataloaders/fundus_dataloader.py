@@ -122,9 +122,6 @@ class FundusSegmentation(Dataset):
 
         return anco_sample
 
-    def _change_transform(self,transform):
-        self.transform = transform
-
     def _read_img_into_memory(self):
 
         img_num = len(self.image_list)
