@@ -263,3 +263,15 @@ def untransform(img, lt):
     img = (img + 1) * 127.5
     lt = lt * 128
     return img, lt
+
+def visualize(**images):
+    """PLot images in one row."""
+    n = len(images) 
+    plt.figure(figsize=(20, 20))
+    for i, (name, image) in enumerate(images.items()):
+        plt.subplot(1, n, i + 1)
+        plt.xticks([])
+        plt.yticks([])
+        plt.title(' '.join(name.split('_')).title())
+        plt.imshow(image, cmap='gray')
+    plt.show()
