@@ -33,10 +33,10 @@ domain = DL.FundusSegmentation(base_dir="/kaggle/input/dataset", dataset="west",
 train_ratio = 0.7
 train_size = int(train_ratio * len(domain))
 test_size = len(domain) - train_size
-# domain_S, domain_val = torch.utils.data.random_split(domain, [train_size, test_size])
-domain_S, domain_val = domain[:train_size], domain[train_size:]
+domain_S, domain_val = torch.utils.data.random_split(domain, [train_size, test_size])
 domain_loaderS = DataLoader(domain_S, batch_size=8, shuffle=True, num_workers=2, pin_memory=True)
-domain_val._change_transform(composed_transforms_ts)
+# domain_val._change_transform(composed_transforms_ts)
+domain_val.dataset.transform = composed_transforms_ts
 domain_loader_val = DataLoader(domain_val, batch_size=8, shuffle=False, num_workers=2, pin_memory=True)
 
 sample = next(iter(domain_loaderS))
