@@ -57,11 +57,11 @@ def disenable_dropout(model):
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('--model-file', type=str, default='./logs/source/checkpoint_185.pth.tar')#D4/checkpoint_170.pth.tar
-    parser.add_argument('--dataset', type=str, default='Domain2')#Domain1
-    parser.add_argument('--batchsize', type=int, default=4)
-    parser.add_argument('--source', type=str, default='Domain1')#Domain4
-    parser.add_argument('-g', '--gpu', type=int, default=2)
-    parser.add_argument('--data-dir', default='../../Data/Fundus/')
+    parser.add_argument('--dataset', type=str, default='south')#Domain1
+    parser.add_argument('--batchsize', type=int, default=32)
+    parser.add_argument('--source', type=str, default='west')#Domain4
+    parser.add_argument('-g', '--gpu', type=int, default=0)
+    parser.add_argument('--data-dir', default='/kaggle/input/dataset')
     parser.add_argument('--out-stride',type=int,default=16)
     parser.add_argument('--save-root-ent',type=str,default='./results/ent/')
     parser.add_argument('--save-root-mask',type=str,default='./results/mask/')
@@ -76,7 +76,7 @@ if __name__ == '__main__':
 
     # 1. dataset
     composed_transforms_test = transforms.Compose([
-        tr.Resize(512),
+        tr.Resize(128),
         tr.Normalize_tf(),
         tr.ToTensor()
     ])
