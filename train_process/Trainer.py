@@ -136,6 +136,8 @@ class Trainer(object):
                 datanum_cnt += float(dice_cup.shape[0])
             val_loss /= datanum_cnt
             val_cup_dice /= datanum_cnt
+            print("val_cup_dice:",val_cup_dice)
+            print("datanum_cnt:",datanum_cnt)
             metrics.append((val_loss, val_cup_dice))
             wandb.log({"val_loss": val_loss, "val_cup_dice": val_cup_dice})
 
