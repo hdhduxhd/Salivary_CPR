@@ -162,7 +162,7 @@ class Trainer(object):
                     'learning_rate_dis2': get_lr(self.optim_dis2),
                     'best_mean_dice': self.best_mean_dice,
                 }, osp.join(self.out, 'checkpoint_best.pth.tar'))
-                print("Epoch %d:, the best model has been saved." % self.best_epoch)
+                print("\nEpoch %d:, the best model(%f) has been saved." % (self.best_epoch,self.best_mean_dice))
 
             with open(osp.join(self.out, 'log.csv'), 'a') as f:
                 elapsed_time = (
