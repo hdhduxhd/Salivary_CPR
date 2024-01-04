@@ -38,7 +38,7 @@ def main():
         '--datasetT', type=str, default='west', help='/kaggle/input/dataset/west'
     )
     parser.add_argument(
-        '--batch-size', type=int, default=8, help='batch size for training the model'
+        '--batch-size', type=int, default=32, help='batch size for training the model'
     )
     parser.add_argument(
         '--group-num', type=int, default=1, help='group number for group normalization'
@@ -117,7 +117,7 @@ def main():
     # 1. dataset
     composed_transforms_tr = transforms.Compose([
         #tr.Resize(512),###
-        tr.RandomScaleCrop(512),
+        tr.RandomScaleCrop(128),
         tr.RandomRotate(),
         tr.RandomFlip(),
         tr.elastic_transform(),
@@ -130,7 +130,7 @@ def main():
 
     composed_transforms_ts = transforms.Compose([
         # tr.RandomCrop(512),
-        tr.Resize(512),
+        tr.Resize(128),
         tr.Normalize_tf(),
         tr.ToTensor()
     ])
