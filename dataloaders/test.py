@@ -43,13 +43,13 @@ sample = next(iter(domain_loaderS))
 for (img, lab) in zip(sample['image'][:1], sample['map'][:1]):
     print(lab.unique())
     visualize(
-        image=img.numpy(),
-        gt_mask=lab.numpy(),
+        image=img.transpose(1, 2, 0).numpy(),
+        gt_mask=lab.transpose(1, 2, 0).numpy(),
     )
 sample = next(iter(domain_loader_val))
 for (img, lab) in zip(sample['image'][:1], sample['map'][:1]):
     print(lab.unique())
     visualize(
-        image=img.numpy(),
-        gt_mask=lab.numpy(),
+        image=img.transpose(1, 2, 0).numpy(),
+        gt_mask=lab.transpose(1, 2, 0).numpy(),
     )
