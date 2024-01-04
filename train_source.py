@@ -117,7 +117,7 @@ def main():
     # 1. dataset
     composed_transforms_tr = transforms.Compose([
         #tr.Resize(512),###
-        tr.RandomScaleCrop(128),
+        tr.RandomScaleCrop(512),
         tr.RandomRotate(),
         tr.RandomFlip(),
         tr.elastic_transform(),
@@ -130,7 +130,7 @@ def main():
 
     composed_transforms_ts = transforms.Compose([
         # tr.RandomCrop(512),
-        tr.Resize(128),
+        tr.Resize(512),
         tr.Normalize_tf(),
         tr.ToTensor()
     ])
