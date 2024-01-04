@@ -1,6 +1,10 @@
 import sys
 sys.path[0]='/kaggle/working/CPR'
 
+import torch
+import numpy as np
+from torchvision import transforms
+from torch.utils.data import DataLoader
 from dataloaders import fundus_dataloader as DL
 from dataloaders import custom_transforms as tr
 from utils.Utils import visualize
