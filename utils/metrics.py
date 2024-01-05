@@ -99,7 +99,7 @@ def hd_numpy(binary_segmentation, binary_gt_label, get_hd):
 
 def dice_coeff(pred, target):
     target = target[:,0,:,:]
-    pred = torch.sigmoid(pred)
+    # pred = torch.sigmoid(pred)
     pred = pred[:,0,:,:]
     smooth = 1e-5
     num = pred.size(0)
