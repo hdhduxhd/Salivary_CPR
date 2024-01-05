@@ -84,11 +84,22 @@ if __name__ == '__main__':
         tr.ToTensor()
     ])
     
-    db = DL.FundusSegmentation(base_dir=args.data_dir, dataset=args.dataset, transform=composed_transforms_test)
+    # 设置随机种子以确保结果可重复
+    random.seed(42)
+    # 计算训练集和测试集的大小
     train_ratio = 0.7
     train_size = int(train_ratio * len(db))
     test_size = len(db) - train_size
-    db_train, db_test = torch.utils.data.random_split(db, [train_size, test_size])
+    # 创建索引列表
+    indices = list(range(len(db)))
+    # 随机打乱索引
+    random.shuffle(indices)
+    # 根据打乱后的索引进行固定划分
+    train_indices = indices[:train_size]
+    test_indices = indices[train_size:]
+    # 创建训练集和测试集
+    db_train = torch.utils.data.dataset.Subset(db, train_indices)
+    db_test = torch.utils.data.dataset.Subset(db, test_indices)
     db_source = DL.FundusSegmentation(base_dir=args.data_dir, dataset=args.source, transform=composed_transforms_test)
     
     train_loader = DataLoader(db_train, batch_size=args.batchsize, shuffle=False, num_workers=1)
