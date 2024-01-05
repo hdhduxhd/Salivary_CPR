@@ -118,7 +118,7 @@ class FundusSegmentation(Dataset):
         _target = Image.open(self.image_list[index]['label'])
         if _target.mode == 'RGB':
             _target = _target.convert('L')
-        _img_name = self.image_list[index]['image'].split('/')[-2]
+        _img_name = self.image_list[index]['image'].split('/')[-3]
 
         # _img = self.image_pool[index]
         # _target = self.label_pool[index]
@@ -139,7 +139,7 @@ class FundusSegmentation(Dataset):
             if _target.mode == 'RGB':
                 _target = _target.convert('L')
             self.label_pool.append(_target)
-            _img_name = self.image_list[index]['image'].split('/')[-1]
+            _img_name = self.image_list[index]['image'].split('/')[-3]
             self.img_name_pool.append(_img_name)
 
 
