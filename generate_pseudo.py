@@ -129,6 +129,8 @@ if __name__ == '__main__':
     centroid_0_obj_dic = {}
     centroid_0_bck_dic = {}
     prob_dic = {}
+    pseudo_label_dice = 0
+    proto_pseudo_label_dice = 0
 
     with torch.no_grad():
         for batch_idx, (sample) in tqdm.tqdm(enumerate(train_loader),
@@ -189,6 +191,9 @@ if __name__ == '__main__':
 
             debugc = 1
 
+            pseudo_label_dice = dice_coeff(pseudo_label, target).item()
+            proto_pseudo_label_dice = dice_coeff(proto_pseudo, target).item()
+
             pseudo_label = pseudo_label.detach().cpu().numpy()
             std_map = std_map.detach().cpu().numpy()
             proto_pseudo = proto_pseudo.detach().cpu().numpy()
@@ -206,7 +211,11 @@ if __name__ == '__main__':
                 centroid_0_obj_dic[img_name[i]] = centroid_0_obj
                 centroid_0_bck_dic[img_name[i]] = centroid_0_bck
                 prob_dic[img_name[i]] = prob[i]
-
+                
+    pseudo_label_dice /= len(train_loader.dataset)
+    proto_pseudo_label_dice /= len(train_loader.dataset)
+    print("\npseudo_label_dice:{%.5f}; proto_pseudo_label_dice:{%.5f}" % (pseudo_label_dice, proto_pseudo_label_dice))
+    
     if not osp.exists('./generate_pseudo'):
         os.mkdir('./generate_pseudo')
     
