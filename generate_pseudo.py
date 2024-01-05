@@ -86,6 +86,7 @@ if __name__ == '__main__':
     
     # 设置随机种子以确保结果可重复
     random.seed(42)
+    db = DL.FundusSegmentation(base_dir=args.data_dir, dataset=args.dataset, transform=composed_transforms_test)
     # 计算训练集和测试集的大小
     train_ratio = 0.7
     train_size = int(train_ratio * len(db))
