@@ -192,8 +192,8 @@ if __name__ == '__main__':
 
             debugc = 1
 
-            pseudo_label_dice = dice_coeff(pseudo_label, target).item()
-            proto_pseudo_label_dice = dice_coeff(proto_pseudo, target).item()
+            pseudo_label_dice += dice_coeff(pseudo_label, target).item()
+            proto_pseudo_label_dice += dice_coeff(proto_pseudo, target).item()
 
             pseudo_label = pseudo_label.detach().cpu().numpy()
             std_map = std_map.detach().cpu().numpy()
