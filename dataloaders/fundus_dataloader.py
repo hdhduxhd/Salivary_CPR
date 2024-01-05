@@ -23,13 +23,15 @@ def GetValidTest(base_dir,
             image_folder = os.path.join(folder_path, 'image')
             # 检查image文件夹是否存在
             if os.path.exists(image_folder):
-                # 遍历image文件夹下的所有图片文件
-                for image_file in os.listdir(image_folder):
-                    image_path = os.path.join(image_folder, image_file)
-                    gt_path = image_path.replace('image', 'mask_single')
-                    image_list.append({'image': image_path, 'label': gt_path, 'id': None})
-                    #每个病例只取一张
-                    break
+                # 遍历image文件夹下的所有图片文件并按文件名排序
+                image_files = sorted(os.listdir(image_folder))
+                # 计算中间文件的索引
+                middle_index = len(image_files) // 2
+                # 取中间的文件
+                middle_file = image_files[middle_index]
+                image_path = os.path.join(image_folder, middle_file)
+                gt_path = image_path.replace('image', 'mask_single')
+                self.image_list.append({'image': image_path, 'label': gt_path, 'id': testid})
     
     # image_dir = os.path.join(base_dir, dataset, split, 'image')
     # imagelist = glob(image_dir + "/*.png")
@@ -85,12 +87,15 @@ class FundusSegmentation(Dataset):
                     image_folder = os.path.join(folder_path, 'image')
                     # 检查image文件夹是否存在
                     if os.path.exists(image_folder):
-                        # 遍历image文件夹下的所有图片文件
-                        for image_file in os.listdir(image_folder):
-                            image_path = os.path.join(image_folder, image_file)
-                            gt_path = image_path.replace('image', 'mask_single')
-                            self.image_list.append({'image': image_path, 'label': gt_path, 'id': testid})
-                            break
+                        # 遍历image文件夹下的所有图片文件并按文件名排序
+                        image_files = sorted(os.listdir(image_folder))
+                        # 计算中间文件的索引
+                        middle_index = len(image_files) // 2
+                        # 取中间的文件
+                        middle_file = image_files[middle_index]
+                        image_path = os.path.join(image_folder, middle_file)
+                        gt_path = image_path.replace('image', 'mask_single')
+                        self.image_list.append({'image': image_path, 'label': gt_path, 'id': testid})
             
             # self._image_dir = os.path.join(self._base_dir, dataset, split, 'image')
             # imagelist = glob(self._image_dir + "/*.png")
@@ -113,7 +118,7 @@ class FundusSegmentation(Dataset):
         _target = Image.open(self.image_list[index]['label'])
         if _target.mode == 'RGB':
             _target = _target.convert('L')
-        _img_name = self.image_list[index]['image'].split('/')[-1]
+        _img_name = self.image_list[index]['image'].split('/')[-2]
 
         # _img = self.image_pool[index]
         # _target = self.label_pool[index]
