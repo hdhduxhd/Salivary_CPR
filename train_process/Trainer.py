@@ -131,6 +131,7 @@ class Trainer(object):
                     raise ValueError('loss is nan while validating')
                 val_loss += loss_data
 
+                predictions = torch.sigmoid(predictions)
                 dice_cup = dice_coeff(predictions, target_map).item()
                 # val_cup_dice += np.sum(dice_cup)
                 val_cup_dice += dice_cup
