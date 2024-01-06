@@ -460,8 +460,8 @@ class Resize(object):
         img = sample['image']
         mask = sample['label']
         name = sample['img_name']
-        assert img.width == mask.width
-        assert img.height == mask.height
+        # assert img.width == mask.width
+        # assert img.height == mask.height
 
         img = img.resize((self.size, self.size), Image.BILINEAR)
         mask = mask.resize((self.size, self.size), Image.NEAREST)
@@ -554,16 +554,11 @@ class GetBoundary(object):
         self.width = width
     def __call__(self, mask):
         cup = mask[:, :, 0]
-        disc = mask[:, :, 1]
         dila_cup = ndimage.binary_dilation(cup, iterations=self.width).astype(cup.dtype)
         eros_cup = ndimage.binary_erosion(cup, iterations=self.width).astype(cup.dtype)
-        dila_disc= ndimage.binary_dilation(disc, iterations=self.width).astype(disc.dtype)
-        eros_disc= ndimage.binary_erosion(disc, iterations=self.width).astype(disc.dtype)
         cup = dila_cup + eros_cup
-        disc = dila_disc + eros_disc
         cup[cup==2]=0
-        disc[disc==2]=0
-        boundary = (cup + disc) > 0
+        boundary = cup > 0
         return boundary.astype(np.uint8)
 
 
@@ -580,19 +575,19 @@ class Normalize_tf(object):
 
     def __call__(self, sample):
         img = np.array(sample['image']).astype(np.float32)
-        __mask = np.array(sample['label']).astype(np.uint8)
         name = sample['img_name']
         img /= 127.5
         img -= 1.0
-        _mask = np.zeros([__mask.shape[0], __mask.shape[1]])
-        _mask[__mask > 200] = 255
-        _mask[(__mask > 50) & (__mask < 201)] = 128
 
-        __mask[_mask == 0] = 2
-        __mask[_mask == 255] = 0
-        __mask[_mask == 128] = 1
+        __mask = np.array(sample['label']).astype(np.uint8)
+        # 进行阈值化操作，将灰度图像转换为二值图像
+        threshold = 128  # 阈值，可根据需要调整
+        mask = np.zeros_like(__mask)
+        mask[__mask > threshold] = 1  # 将大于阈值的像素设置为1
+        mask[__mask <= threshold] = 0  # 将小于等于阈值的像素设置为0
+        mask = np.expand_dims(mask, -1)
 
-        mask = to_multilabel(__mask)
+        # mask = to_multilabel(__mask)
         boundary = self.get_boundary(mask) * 255
         boundary = ndimage.gaussian_filter(boundary, sigma=3) / 255.0
         boundary = np.expand_dims(boundary, -1)
@@ -624,16 +619,13 @@ class Normalize_tf1(object):
         img -= 1.0
 
         __mask = np.array(gt).astype(np.uint8)
-
+        # 进行阈值化操作，将灰度图像转换为二值图像
+        threshold = 128  # 阈值，可根据需要调整
         _mask = np.zeros([__mask.shape[0], __mask.shape[1]])
-        _mask[__mask > 200] = 255
-        _mask[(__mask > 50) & (__mask < 201)] = 128
-
-        __mask[_mask == 0] = 2
-        __mask[_mask == 255] = 0
-        __mask[_mask == 128] = 1
-
-        __mask = to_multilabel(__mask)
+        _mask[__mask > threshold] = 1
+        _mask[__mask <= threshold] = 0
+        __mask = np.expand_dims(_mask, -1)
+        # __mask = to_multilabel(__mask)
 
         sample = {'image': img, 'pseudo_label': mask, 'img_name': name, 'gt':__mask}
 
@@ -660,16 +652,13 @@ class Normalize_tf2(object):
         img -= 1.0
 
         __mask = np.array(gt).astype(np.uint8)
-
+        # 进行阈值化操作，将灰度图像转换为二值图像
+        threshold = 128  # 阈值，可根据需要调整
         _mask = np.zeros([__mask.shape[0], __mask.shape[1]])
-        _mask[__mask > 200] = 255
-        _mask[(__mask > 50) & (__mask < 201)] = 128
-
-        __mask[_mask == 0] = 2
-        __mask[_mask == 255] = 0
-        __mask[_mask == 128] = 1
-
-        __mask = to_multilabel(__mask)
+        _mask[__mask > threshold] = 1
+        _mask[__mask <= threshold] = 0
+        __mask = np.expand_dims(_mask, -1)
+        # __mask = to_multilabel(__mask)
 
         sample = {'image': img, 'pseudo_label': mask, 'img_name': name, 'prob': prob, 'gt':__mask}
 
