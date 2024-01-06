@@ -1,5 +1,7 @@
 from __future__ import print_function, division
 import os
+import sys
+sys.path[0]='/kaggle/working/CPR/cpr'
 from PIL import Image
 import numpy as np
 from torch.utils.data import Dataset
@@ -9,7 +11,6 @@ import random
 
 import torch
 import torch.nn.functional as F
-import sys
 
 
 class ExtractAffinityLabelInRadius():
@@ -65,11 +66,16 @@ class ExtractAffinityLabelInRadius():
         return torch.from_numpy(bg_pos_affinity_label), torch.from_numpy(fg_pos_affinity_label), torch.from_numpy(neg_affinity_label)
 
 class FundusSegmentation(Dataset):
+    """
+    Fundus segmentation dataset
+    including 5 domain dataset
+    one for test others for training
+    """
 
     def __init__(self,
                  base_dir=Path.db_root_dir('fundus'),
-                 dataset='refuge',
-                 split='train',
+                 dataset='west',
+                 split='',
                  testid=None,
                  transform=None,
                  image_list=None
@@ -89,17 +95,33 @@ class FundusSegmentation(Dataset):
             self.label_pool = []
             self.img_name_pool = []
 
-            self._image_dir = os.path.join(self._base_dir, dataset, split, 'image')
-            print(self._image_dir)
-            imagelist = glob(self._image_dir + "/*.png")
-            for image_path in imagelist:
-                gt_path = image_path.replace('image', 'mask')
-                self.image_list.append({'image': image_path, 'label': gt_path, 'id': testid})
-
+            root_folder = os.path.join(self._base_dir, dataset, self.split)
+            # 遍历根目录下的所有文件夹
+            for folder_name in os.listdir(root_folder):
+                folder_path = os.path.join(root_folder, folder_name)
+                # 检查是否为文件夹
+                if os.path.isdir(folder_path):
+                    image_folder = os.path.join(folder_path, 'image')
+                    # 检查image文件夹是否存在
+                    if os.path.exists(image_folder):
+                        # 遍历image文件夹下的所有图片文件并按文件名排序
+                        image_files = sorted(os.listdir(image_folder))
+                        # 计算中间文件的索引
+                        middle_index = len(image_files) // 2
+                        # 取中间的文件
+                        middle_file = image_files[middle_index]
+                        image_path = os.path.join(image_folder, middle_file)
+                        gt_path = image_path.replace('image', 'mask_single')
+                        self.image_list.append({'image': image_path, 'label': gt_path, 'id': testid})
+            
+            # self._image_dir = os.path.join(self._base_dir, dataset, split, 'image')
+            # imagelist = glob(self._image_dir + "/*.png")
+            # for image_path in imagelist:
+            #     gt_path = image_path.replace('image', 'mask')
+            #     self.image_list.append({'image': image_path, 'label': gt_path, 'id': testid})
             self.transform = transform
-            # self._read_img_into_memory()
             # Display stats
-            print('Number of images in {}: {:d}'.format(split, len(self.image_list)))
+            print('Number of images in {}: {:d}'.format(root_folder, len(self.image_list)))
         else:
             self.image_list = image_list
             self.transform = transform
@@ -111,9 +133,9 @@ class FundusSegmentation(Dataset):
 
         _img = Image.open(self.image_list[index]['image']).convert('RGB')
         _target = Image.open(self.image_list[index]['label'])
-        if _target.mode is 'RGB':
+        if _target.mode == 'RGB':
             _target = _target.convert('L')
-        _img_name = self.image_list[index]['image'].split('/')[-1]
+        _img_name = self.image_list[index]['image'].split('/')[-3]
 
         # _img = self.image_pool[index]
         # _target = self.label_pool[index]
@@ -131,10 +153,10 @@ class FundusSegmentation(Dataset):
         for index in range(img_num):
             self.image_pool.append(Image.open(self.image_list[index]['image']).convert('RGB'))
             _target = Image.open(self.image_list[index]['label'])
-            if _target.mode is 'RGB':
+            if _target.mode == 'RGB':
                 _target = _target.convert('L')
             self.label_pool.append(_target)
-            _img_name = self.image_list[index]['image'].split('/')[-1]
+            _img_name = self.image_list[index]['image'].split('/')[-3]
             self.img_name_pool.append(_img_name)
 
 
@@ -151,12 +173,12 @@ class FundusSegmentation_wsim(Dataset):
 
     def __init__(self,
                  base_dir=Path.db_root_dir('fundus'),
-                 dataset='Domain2',
-                 split='train/ROIs',
+                 dataset='south',
+                 split='',
                  testid=None,
                  transform=None,
                  image_list=None,
-                 pseudo='../generate_pseudo/pseudolabel_D4_new.npz',
+                 pseudo='/kaggle/input/checkpoint-best/pseudolabel_south.npz',
                  radius=4
                  ):
         """
@@ -174,12 +196,24 @@ class FundusSegmentation_wsim(Dataset):
             self.label_pool = []
             self.img_name_pool = []
 
-            self._image_dir = os.path.join(self._base_dir, dataset, split, 'image')
-            print(self._image_dir)
-            imagelist = glob(self._image_dir + "/*.png")
-            for image_path in imagelist:
-                gt_path = image_path.replace('image', 'mask')
-                self.image_list.append({'image': image_path, 'label': gt_path, 'id': testid})
+            root_folder = os.path.join(self._base_dir, dataset, self.split)
+            # 遍历根目录下的所有文件夹
+            for folder_name in os.listdir(root_folder):
+                folder_path = os.path.join(root_folder, folder_name)
+                # 检查是否为文件夹
+                if os.path.isdir(folder_path):
+                    image_folder = os.path.join(folder_path, 'image')
+                    # 检查image文件夹是否存在
+                    if os.path.exists(image_folder):
+                        # 遍历image文件夹下的所有图片文件并按文件名排序
+                        image_files = sorted(os.listdir(image_folder))
+                        # 计算中间文件的索引
+                        middle_index = len(image_files) // 2
+                        # 取中间的文件
+                        middle_file = image_files[middle_index]
+                        image_path = os.path.join(image_folder, middle_file)
+                        gt_path = image_path.replace('image', 'mask_single')
+                        self.image_list.append({'image': image_path, 'label': gt_path, 'id': testid})
 
             npfilename = pseudo
 
