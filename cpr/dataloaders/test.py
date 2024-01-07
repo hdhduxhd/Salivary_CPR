@@ -7,6 +7,7 @@ from torchvision import transforms
 from torch.utils.data import DataLoader
 from dataloaders import fundus_dataloader as DL
 from dataloaders import custom_transforms as tr
+import random
 
 composed_transforms_train = transforms.Compose([
     tr.Resize1(512, 32),
