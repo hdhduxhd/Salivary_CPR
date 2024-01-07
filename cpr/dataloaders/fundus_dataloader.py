@@ -275,6 +275,8 @@ class FundusSegmentation_wsim(Dataset):
         pseudo_label = anco_sample['pseudo_label']        
         img_name = anco_sample['img_name']
 
+        print(gt.shape)
+        print(pseudo_label.shape)
         gt = anco_sample['gt']
 
         gt_cup = self.extract_aff_lab_func(gt[0])
