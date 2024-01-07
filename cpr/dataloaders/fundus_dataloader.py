@@ -249,7 +249,10 @@ class FundusSegmentation_wsim(Dataset):
         pseudo_label = torch.from_numpy(np.asarray(pseudo_label, dtype=np.float32)).float()
         uncertain_map = torch.from_numpy(np.asarray(uncertain_map, dtype=np.float32)).float()
         proto_pseudo = torch.from_numpy(np.asarray(proto_pseudo, dtype=np.float32)).float()
-        
+
+        print(pseudo_label.shape)
+        print(uncertain_map.shape)
+        print(proto_pseudo.shape)
         mask_0_obj = torch.zeros([1, pseudo_label.shape[1], pseudo_label.shape[2]])
         mask_0_bck = torch.zeros([1, pseudo_label.shape[1], pseudo_label.shape[2]])
         mask_0_obj[uncertain_map[0:1, ...] < 0.05] = 1.0
