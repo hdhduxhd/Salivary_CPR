@@ -280,7 +280,7 @@ class FundusSegmentation_wsim(Dataset):
 
         #anco_sample = {'image': img, 'pseudo_label': pseudo_label, 'img_name': img_name}
             
-        return img, label_cup, label_disc, img_name, gt_cup, gt_disc
+        return img, label_cup, img_name, gt_cup
 
 
     def _read_img_into_memory(self):
