@@ -17,7 +17,7 @@ composed_transforms_train = transforms.Compose([
     tr.ToTensor1()
 ])
 
-db_train = DL.FundusSegmentation_wsim(base_dir='/kaggle/input/dataset', dataset='south', transform=composed_transforms_train, pseudo='/kaggle/input/checkpoint-best/checkpoint_best.pth.tar',radius=4)
+db_train = DL.FundusSegmentation_wsim(base_dir='/kaggle/input/dataset', dataset='south', transform=composed_transforms_train, pseudo='/kaggle/input/checkpoint-best/pseudolabel_south.npz',radius=4)
 train_loader = DataLoader(db_train, batch_size=8, shuffle=False, num_workers=0)
 
 def test_dataloader():
