@@ -246,9 +246,9 @@ class FundusSegmentation_wsim(Dataset):
         uncertain_map = self.uncertain_dic.get(_img_name)
         proto_pseudo = self.proto_pseudo_dic.get(_img_name)
 
-        pseudo_label = torch.from_numpy(np.asarray(pseudo_label)).float32()
-        uncertain_map = torch.from_numpy(np.asarray(uncertain_map)).float32()
-        proto_pseudo = torch.from_numpy(np.asarray(proto_pseudo)).float32()
+        pseudo_label = torch.from_numpy(np.asarray(pseudo_label, dtype=np.float32)).float()
+        uncertain_map = torch.from_numpy(np.asarray(uncertain_map, dtype=np.float32)).float()
+        proto_pseudo = torch.from_numpy(np.asarray(proto_pseudo, dtype=np.float32)).float()
         
         mask_0_obj = torch.zeros([1, pseudo_label.shape[1], pseudo_label.shape[2]])
         mask_0_bck = torch.zeros([1, pseudo_label.shape[1], pseudo_label.shape[2]])
@@ -373,10 +373,10 @@ class FundusSegmentation_wprob(Dataset):
         proto_pseudo = self.proto_pseudo_dic.get(_img_name)
         prob = self.prob_dic.get(_img_name)
 
-        pseudo_label = torch.from_numpy(np.asarray(pseudo_label)).float32()
-        uncertain_map = torch.from_numpy(np.asarray(uncertain_map)).float32()
-        proto_pseudo = torch.from_numpy(np.asarray(proto_pseudo)).float32()
-        prob = torch.from_numpy(np.asarray(prob)).float32()
+        pseudo_label = torch.from_numpy(np.asarray(pseudo_label, dtype=np.float32)).float()
+        uncertain_map = torch.from_numpy(np.asarray(uncertain_map, dtype=np.float32)).float()
+        proto_pseudo = torch.from_numpy(np.asarray(proto_pseudo, dtype=np.float32)).float()
+        prob = torch.from_numpy(np.asarray(prob, dtype=np.float32)).float()
 
         
         mask_0_obj = torch.zeros([1, pseudo_label.shape[1], pseudo_label.shape[2]])
