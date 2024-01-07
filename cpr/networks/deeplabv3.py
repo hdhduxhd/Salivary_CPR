@@ -28,18 +28,12 @@ class DeepLab(nn.Module):
         self.decoder = build_decoder(num_classes, backbone, BatchNorm)
 
         self.aff_cup = torch.nn.Conv2d(256, 256, 1, bias=False)
-        self.aff_disc = torch.nn.Conv2d(256, 256, 1, bias=False)
         torch.nn.init.xavier_uniform_(self.aff_cup.weight, gain=4)
-        torch.nn.init.xavier_uniform_(self.aff_disc.weight, gain=4)
         self.bn_cup = BatchNorm(256)
-        self.bn_disc = BatchNorm(256)
         self.bn_cup.weight.data.fill_(1)
         self.bn_cup.bias.data.zero_()
-        self.bn_disc.weight.data.fill_(1)
-        self.bn_disc.bias.data.zero_()
 
-
-        self.from_scratch_layers = [self.aff_cup, self.aff_disc, self.bn_cup, self.bn_disc]
+        self.from_scratch_layers = [self.aff_cup, self.bn_cup]
         
         self.predefined_featuresize = int(image_res//16)
         self.ind_from, self.ind_to = pyutils.get_indices_of_pairs(radius=radius, size=(self.predefined_featuresize, self.predefined_featuresize))
@@ -58,7 +52,6 @@ class DeepLab(nn.Module):
         x1 = F.interpolate(x1, size=input.size()[2:], mode='bilinear', align_corners=True)
         
         f_cup = F.relu(self.bn_cup(self.aff_cup(feature)))###bn
-        f_disc = F.relu(self.bn_disc(self.aff_disc(feature)))
 
         if f_cup.size(2) == self.predefined_featuresize and f_cup.size(3) == self.predefined_featuresize:
             ind_from = self.ind_from
@@ -90,31 +83,7 @@ class DeepLab(nn.Module):
             aff_cup = sparse.FloatTensor(torch.cat([indices, indices_id, indices_tp], dim=1),
                                       torch.cat([aff_cup, torch.ones([area]), aff_cup])).to_dense().cuda()
 
-
-        f_disc = f_disc.view(f_disc.size(0), f_disc.size(1), -1)
-
-        ff = torch.index_select(f_disc, dim=2, index=ind_from.cuda(non_blocking=True))
-        ft = torch.index_select(f_disc, dim=2, index=ind_to.cuda(non_blocking=True))
-
-        ff = torch.unsqueeze(ff, dim=2)
-        ft = ft.view(ft.size(0), ft.size(1), -1, ff.size(3))
-
-        aff_disc = torch.exp(-torch.mean(torch.abs(ft-ff), dim=1))
-
-        if to_dense:
-            aff_disc = aff_disc.view(-1).cpu()
-
-            ind_from_exp = torch.unsqueeze(ind_from, dim=0).expand(ft.size(2), -1).contiguous().view(-1)
-            indices = torch.stack([ind_from_exp, ind_to])
-            indices_tp = torch.stack([ind_to, ind_from_exp])
-
-            area = f_disc.size(2)
-            indices_id = torch.stack([torch.arange(0, area).long(), torch.arange(0, area).long()])
-
-            aff_disc = sparse.FloatTensor(torch.cat([indices, indices_id, indices_tp], dim=1),
-                                      torch.cat([aff_disc, torch.ones([area]), aff_disc])).to_dense().cuda()
-
-        return x1, x2, feature_last, aff_cup, aff_disc
+        return x1, x2, feature_last, aff_cup
 
     def freeze_bn(self):
         for m in self.modules():
