@@ -252,15 +252,11 @@ class FundusSegmentation_wsim(Dataset):
         
         mask_0_obj = torch.zeros([1, pseudo_label.shape[1], pseudo_label.shape[2]])
         mask_0_bck = torch.zeros([1, pseudo_label.shape[1], pseudo_label.shape[2]])
-        mask_1_obj = torch.zeros([1, pseudo_label.shape[1], pseudo_label.shape[2]])
-        mask_1_bck = torch.zeros([1, pseudo_label.shape[1], pseudo_label.shape[2]])
         mask_0_obj[uncertain_map[0:1, ...] < 0.05] = 1.0
         mask_0_bck[uncertain_map[0:1, ...] < 0.05] = 1.0
-        mask_1_obj[uncertain_map[1:, ...] < 0.05] = 1.0
-        mask_1_bck[uncertain_map[1:, ...] < 0.05] = 1.0
-        mask = torch.cat((mask_0_obj*pseudo_label[0:1,...] + mask_0_bck*(1.0-pseudo_label[0:1,...]), mask_1_obj*pseudo_label[1:,...] + mask_1_bck*(1.0-pseudo_label[1:,...])), dim=0)
+        mask = mask_0_obj*pseudo_label[0:1,...] + mask_0_bck*(1.0-pseudo_label[0:1,...])
 
-        mask_proto = torch.zeros([2, pseudo_label.shape[1], pseudo_label.shape[2]])
+        mask_proto = torch.zeros([1, pseudo_label.shape[1], pseudo_label.shape[2]])
         mask_proto[pseudo_label==proto_pseudo] = 1.0
 
         mask = mask*mask_proto
@@ -279,10 +275,8 @@ class FundusSegmentation_wsim(Dataset):
         gt = anco_sample['gt']
 
         gt_cup = self.extract_aff_lab_func(gt[0])
-        gt_disc = self.extract_aff_lab_func(gt[1])
                
         label_cup = self.extract_aff_lab_func(pseudo_label[0])#torch.Size([100, 100])->torch.Size([34, 8832])
-        label_disc = self.extract_aff_lab_func(pseudo_label[1])        
 
         #anco_sample = {'image': img, 'pseudo_label': pseudo_label, 'img_name': img_name}
             
@@ -298,7 +292,7 @@ class FundusSegmentation_wsim(Dataset):
             if _target.mode is 'RGB':
                 _target = _target.convert('L')
             self.label_pool.append(_target)
-            _img_name = self.image_list[index]['image'].split('/')[-1]
+            _img_name = self.image_list[index]['image'].split('/')[-3]
             self.img_name_pool.append(_img_name)
 
 
