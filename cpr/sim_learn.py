@@ -1,5 +1,3 @@
-
- 
 #!/usr/bin/env python
 
 import argparse
@@ -45,7 +43,7 @@ import networks.deeplabv3 as netd
 import networks.deeplabv3_eval as netd_eval
 from tool import pyutils
 
-from torch.utils.tensorboard import SummaryWriter
+import wandb
 import os.path as osp
 
 
@@ -85,14 +83,14 @@ if __name__ == '__main__':
         tr.Normalize_tf(),
         tr.ToTensor()
     ])
-    db_train = DL.FundusSegmentation_wsim(base_dir=args.data_dir, dataset=args.dataset, split='train/ROIs', transform=composed_transforms_train, pseudo=args.pseudo,radius=radius)
-    #db_test = DL.FundusSegmentation(base_dir=args.data_dir, dataset=args.dataset, split='test/ROIs', transform=composed_transforms_test)
+    db_train = DL.FundusSegmentation_wsim(base_dir=args.data_dir, dataset=args.dataset, transform=composed_transforms_train, pseudo=args.pseudo,radius=radius)
+    #db_test = DL.FundusSegmentation(base_dir=args.data_dir, dataset=args.dataset, transform=composed_transforms_test)
 
     train_loader = DataLoader(db_train, batch_size=8, shuffle=False, num_workers=0)
     #test_loader = DataLoader(db_test, batch_size=1, shuffle=False, num_workers=0)
 
     # 2. model
-    model = netd.DeepLab(num_classes=2, backbone='mobilenet', output_stride=args.out_stride, sync_bn=args.sync_bn, freeze_bn=args.freeze_bn, radius=radius)
+    model = netd.DeepLab(num_classes=1, backbone='mobilenet', output_stride=args.out_stride, sync_bn=args.sync_bn, freeze_bn=args.freeze_bn, radius=radius)
     
     if torch.cuda.is_available():
         model = model.cuda()
@@ -107,23 +105,33 @@ if __name__ == '__main__':
     optim_gen = torch.optim.Adam(model.get_scratch_parameters(), lr=3e-2, betas=(0.9, 0.99))#0.002
     #optim_gen.load_state_dict(checkpoint['optim_state_dict'])
     
-    best_val_cup_dice = 0.0;
-    best_val_disc_dice = 0.0;
+    best_val_cup_dice = 0.0
     best_avg = 0.0
     iter_num = 0
     avg_meter_cup = pyutils.AverageMeter('loss', 'bg_loss', 'fg_loss', 'neg_loss', 'bg_cnt', 'fg_cnt', 'neg_cnt')
-    avg_meter_disc = pyutils.AverageMeter('loss', 'bg_loss', 'fg_loss', 'neg_loss', 'bg_cnt', 'fg_cnt', 'neg_cnt')
+    wandb.init(
+        # set the wandb project where this run will be logged
+        project="Salivary_Seg_CPR_sim_learn",
+    
+        # track hyperparameters and run metadata
+        config={
+        "learning_rate": 0.003,
+        "architecture": "deeplab",
+        "backbone": "mobilenet",
+        "dataset": "south"
+        }
+    )
     for epoch_num in tqdm.tqdm(range(num_epochs), ncols=70):
         model.train()
         for batch_idx, (sample) in enumerate(train_loader):
-            data, label_cup, label_disc, img_name, gt_cup, gt_disc = sample
+            data, label_cup, img_name, gt_cup = sample
 
             if torch.cuda.is_available():
-                data, label_cup, label_disc = data.cuda(), label_cup, label_disc
-                #data, label_cup, label_disc = data.cuda(), gt_cup, gt_disc
+                data, label_cup = data.cuda(), label_cup
+                #data, label_cup = data.cuda(), gt_cup
             #data, target = Variable(data), Variable(target)
 
-            prediction, _, feature, aff_cup, aff_disc = model(data)
+            prediction, _, feature, aff_cup = model(data)
             
             optim_gen.zero_grad()
 
@@ -140,24 +148,10 @@ if __name__ == '__main__':
             neg_loss = torch.sum(- neg_label * torch.log(1. + 1e-5 - aff_cup)) / neg_count
 
             loss_cup = bg_loss/4 + fg_loss/4 + neg_loss/2
-            #disc
-            bg_label = label_disc[0].cuda(non_blocking=True)
-            fg_label = label_disc[1].cuda(non_blocking=True)
-            neg_label = label_disc[2].cuda(non_blocking=True)
+            wandb.log({"loss": loss_cup, "bg_loss": bg_loss, "fg_loss": fg_loss, "neg_loss": neg_loss})
 
-            bg_count = torch.sum(bg_label) + 1e-5
-            fg_count = torch.sum(fg_label) + 1e-5
-            neg_count = torch.sum(neg_label) + 1e-5
-
-            bg_loss = torch.sum(- bg_label * torch.log(aff_disc + 1e-5)) / bg_count
-            fg_loss = torch.sum(- fg_label * torch.log(aff_disc + 1e-5)) / fg_count
-            neg_loss = torch.sum(- neg_label * torch.log(1. + 1e-5 - aff_disc)) / neg_count
-
-            loss_disc = bg_loss/4 + fg_loss/4 + neg_loss/2
-
-            loss_aff = (loss_cup + loss_disc)/2
+            loss_aff = loss_cup
             
-
             loss = loss_aff 
             loss.backward()
             optim_gen.step()
@@ -170,17 +164,16 @@ if __name__ == '__main__':
         
         with torch.no_grad():
             for batch_idx, (sample) in enumerate(train_loader):
-                data, label_cup, label_disc, img_name, gt_cup, gt_disc = sample
+                data, label_cup, img_name, gt_cup = sample
                 if torch.cuda.is_available():
                     data = data.cuda()
 
-                prediction, boundary, _, aff_cup, aff_disc = model_eval(data)
-                #prediction, _, feature, aff_cup, aff_disc
+                prediction, boundary, _, aff_cup = model_eval(data)
+                #prediction, _, feature, aff_cup
 
                 bg_label = gt_cup[0].cuda(non_blocking=True)
                 fg_label = gt_cup[1].cuda(non_blocking=True)
                 neg_label = gt_cup[2].cuda(non_blocking=True)
-
 
                 bg_count = torch.sum(bg_label) + 1e-5
                 fg_count = torch.sum(fg_label) + 1e-5
@@ -197,38 +190,14 @@ if __name__ == '__main__':
                     'bg_loss': bg_loss.item(), 'fg_loss': fg_loss.item(), 'neg_loss': neg_loss.item(),
                     'bg_cnt': bg_count.item(), 'fg_cnt': fg_count.item(), 'neg_cnt': neg_count.item()
                 })
-                #disc
-                bg_label = gt_disc[0].cuda(non_blocking=True)
-                fg_label = gt_disc[1].cuda(non_blocking=True)
-                neg_label = gt_disc[2].cuda(non_blocking=True)
-
-                bg_count = torch.sum(bg_label) + 1e-5
-                fg_count = torch.sum(fg_label) + 1e-5
-                neg_count = torch.sum(neg_label) + 1e-5
-
-                bg_loss = torch.sum(- bg_label * torch.log(aff_disc + 1e-5)) / bg_count
-                fg_loss = torch.sum(- fg_label * torch.log(aff_disc + 1e-5)) / fg_count
-                neg_loss = torch.sum(- neg_label * torch.log(1. + 1e-5 - aff_disc)) / neg_count
-
-                loss_disc = bg_loss/4 + fg_loss/4 + neg_loss/2
-
-                avg_meter_disc.add({
-                    'loss': loss_disc.item(),
-                    'bg_loss': bg_loss.item(), 'fg_loss': fg_loss.item(), 'neg_loss': neg_loss.item(),
-                    'bg_cnt': bg_count.item(), 'fg_cnt': fg_count.item(), 'neg_cnt': neg_count.item()
-                })
+        
         print(  '***********cup',
                 'loss:%.4f %.4f %.4f %.4f' % avg_meter_cup.get('loss', 'bg_loss', 'fg_loss', 'neg_loss'),
                 'cnt:%.0f %.0f %.0f' % avg_meter_cup.get('bg_cnt', 'fg_cnt', 'neg_cnt')
                 )
-        print(  '***********disc',
-                'loss:%.4f %.4f %.4f %.4f' % avg_meter_disc.get('loss', 'bg_loss', 'fg_loss', 'neg_loss'),
-                'cnt:%.0f %.0f %.0f' % avg_meter_disc.get('bg_cnt', 'fg_cnt', 'neg_cnt')
-                )
 
-        avg_meter_cup.pop()
-        avg_meter_disc.pop()        
-        
+        avg_meter_cup.pop()   
+        wandb.finish()
         model.train()
 
     if not osp.exists('./log'):
