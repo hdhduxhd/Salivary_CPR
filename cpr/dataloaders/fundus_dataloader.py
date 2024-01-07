@@ -241,6 +241,7 @@ class FundusSegmentation_wsim(Dataset):
         if _target.mode == 'RGB':
             _target = _target.convert('L')
         _img_name = self.image_list[index]['image'].split('/')[-3]
+        print(_img_name)
 
         pseudo_label = self.pseudo_label_dic.get(_img_name)
         uncertain_map = self.uncertain_dic.get(_img_name)
