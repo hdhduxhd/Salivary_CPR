@@ -51,7 +51,7 @@ if __name__ == '__main__':
     radius = args.radius
     os.environ['CUDA_VISIBLE_DEVICES'] = str(args.gpu)
 
-    model = netd.DeepLab(num_classes=1, backbone='mobilenet', output_stride=args.out_stride, sync_bn=args.sync_bn, freeze_bn=args.freeze_bn, image_res=800, radius=radius)
+    model = netd.DeepLab(num_classes=1, backbone='mobilenet', output_stride=args.out_stride, sync_bn=args.sync_bn, freeze_bn=args.freeze_bn, image_res=512, radius=radius)
     
     if torch.cuda.is_available():
         model = model.cuda()
@@ -65,7 +65,7 @@ if __name__ == '__main__':
 
     composed_transforms_train = transforms.Compose([
         
-        tr.Resize2(None,None,50,None),#512,None,32,512 #None,None,50,None      
+        tr.Resize2(512,None,32,512),#512,None,32,512 #None,None,50,None      
         tr.Normalize_tf2(),
         tr.ToTensor2()
     ])
@@ -101,11 +101,12 @@ if __name__ == '__main__':
 
         orig_shape = img.shape
 
-        prob = prob.unsqueeze(0)
-        print("prob.shape:",prob.shape)
+        prob = prob.unsqueeze(1)
         prob_upsample = F.interpolate(prob, size=(img.shape[2], img.shape[3]), mode='bilinear')
         #prob_upsample = prob_upsample.squeeze(0)
         prob_upsample = (prob_upsample>0.75).float()
+        print("prob_upsample[:,0].shape:",prob_upsample[:,0])
+        print("gt[:,0].shape:",gt[:,0])
         
         dice_prob_cup = dice_coefficient_numpy(prob_upsample[:,0], gt[:,0])
         
