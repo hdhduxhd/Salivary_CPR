@@ -105,8 +105,8 @@ if __name__ == '__main__':
         prob_upsample = F.interpolate(prob, size=(img.shape[2], img.shape[3]), mode='bilinear')
         #prob_upsample = prob_upsample.squeeze(0)
         prob_upsample = (prob_upsample>0.75).float()
-        print("prob_upsample[:,0].shape:",prob_upsample[:,0].shape)
-        print("gt[:,0].shape:",gt[:,0].shape)
+        # print("prob_upsample[:,0].shape:",prob_upsample[:,0].shape)
+        # print("gt[:,0].shape:",gt[:,0].shape)
         
         dice_prob_cup = dice_coefficient_numpy(prob_upsample[:,0], gt[:,0])
         
@@ -128,8 +128,8 @@ if __name__ == '__main__':
 
             cam_vec_cup = cam[:,0].view(1,-1)
 
-            print("cam_vec_cup.shape:",cam_vec_cup.shape)
-            print("trans_mat_cup.shape:",trans_mat_cup.shape)
+            # print("cam_vec_cup.shape:",cam_vec_cup.shape)
+            # print("trans_mat_cup.shape:",trans_mat_cup.shape)
             cam_rw_cup = torch.matmul(cam_vec_cup.cuda(), trans_mat_cup)
 
             cam_rw_cup = cam_rw_cup.view(1, 1, dheight, dwidth)
