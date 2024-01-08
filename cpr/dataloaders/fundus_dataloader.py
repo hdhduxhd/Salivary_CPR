@@ -308,12 +308,12 @@ class FundusSegmentation_wprob(Dataset):
 
     def __init__(self,
                  base_dir,#=Path.db_root_dir('fundus')
-                 dataset='Domain2',
-                 split='train/ROIs',
+                 dataset='south',
+                 split='',
                  testid=None,
                  transform=None,
                  image_list=None,
-                 pseudo='../generate_pseudo/pseudolabel_D4_new.npz',
+                 pseudo='/kaggle/input/checkpoint-best/pseudolabel_south.npz',
                 
                  ):
         """
@@ -331,12 +331,24 @@ class FundusSegmentation_wprob(Dataset):
             self.label_pool = []
             self.img_name_pool = []
 
-            self._image_dir = os.path.join(self._base_dir, dataset, split, 'image')
-            
-            imagelist = glob(self._image_dir + "/*.png")
-            for image_path in imagelist:
-                gt_path = image_path.replace('image', 'mask')
-                self.image_list.append({'image': image_path, 'label': gt_path, 'id': testid})
+            root_folder = os.path.join(self._base_dir, dataset, self.split)
+            # 遍历根目录下的所有文件夹
+            for folder_name in sorted([folder_name for folder_name in os.listdir(root_folder)]):
+                folder_path = os.path.join(root_folder, folder_name)
+                # 检查是否为文件夹
+                if os.path.isdir(folder_path):
+                    image_folder = os.path.join(folder_path, 'image')
+                    # 检查image文件夹是否存在
+                    if os.path.exists(image_folder):
+                        # 遍历image文件夹下的所有图片文件并按文件名排序
+                        image_files = sorted(os.listdir(image_folder))
+                        # 计算中间文件的索引
+                        middle_index = len(image_files) // 2
+                        # 取中间的文件
+                        middle_file = image_files[middle_index]
+                        image_path = os.path.join(image_folder, middle_file)
+                        gt_path = image_path.replace('image', 'mask_single')
+                        self.image_list.append({'image': image_path, 'label': gt_path, 'id': testid})
             
             npfilename = pseudo
 
@@ -364,7 +376,7 @@ class FundusSegmentation_wprob(Dataset):
         _target = Image.open(self.image_list[index]['label'])
         if _target.mode == 'RGB':
             _target = _target.convert('L')
-        _img_name = self.image_list[index]['image'].split('/')[-1]
+        _img_name = self.image_list[index]['image'].split('/')[-3]
 
 
         pseudo_label = self.pseudo_label_dic.get(_img_name)
@@ -380,15 +392,11 @@ class FundusSegmentation_wprob(Dataset):
         
         mask_0_obj = torch.zeros([1, pseudo_label.shape[1], pseudo_label.shape[2]])
         mask_0_bck = torch.zeros([1, pseudo_label.shape[1], pseudo_label.shape[2]])
-        mask_1_obj = torch.zeros([1, pseudo_label.shape[1], pseudo_label.shape[2]])
-        mask_1_bck = torch.zeros([1, pseudo_label.shape[1], pseudo_label.shape[2]])
         mask_0_obj[uncertain_map[0:1, ...] < 0.05] = 1.0
         mask_0_bck[uncertain_map[0:1, ...] < 0.05] = 1.0
-        mask_1_obj[uncertain_map[1:, ...] < 0.05] = 1.0
-        mask_1_bck[uncertain_map[1:, ...] < 0.05] = 1.0
-        mask = torch.cat((mask_0_obj*pseudo_label[0:1,...] + mask_0_bck*(1.0-pseudo_label[0:1,...]), mask_1_obj*pseudo_label[1:,...] + mask_1_bck*(1.0-pseudo_label[1:,...])), dim=0)
+        mask = mask_0_obj*pseudo_label[0:1,...] + mask_0_bck*(1.0-pseudo_label[0:1,...])
 
-        mask_proto = torch.zeros([2, pseudo_label.shape[1], pseudo_label.shape[2]])
+        mask_proto = torch.zeros([1, pseudo_label.shape[1], pseudo_label.shape[2]])
         mask_proto[pseudo_label==proto_pseudo] = 1.0
 
         mask = mask*mask_proto
@@ -425,7 +433,7 @@ class FundusSegmentation_wprob(Dataset):
             if _target.mode == 'RGB':
                 _target = _target.convert('L')
             self.label_pool.append(_target)
-            _img_name = self.image_list[index]['image'].split('/')[-1]
+            _img_name = self.image_list[index]['image'].split('/')[-3]
             self.img_name_pool.append(_img_name)
 
 
