@@ -241,7 +241,6 @@ class FundusSegmentation_wsim(Dataset):
         if _target.mode == 'RGB':
             _target = _target.convert('L')
         _img_name = self.image_list[index]['image'].split('/')[-3]
-        print(_img_name)
 
         pseudo_label = self.pseudo_label_dic.get(_img_name)
         uncertain_map = self.uncertain_dic.get(_img_name)
@@ -251,9 +250,6 @@ class FundusSegmentation_wsim(Dataset):
         uncertain_map = torch.from_numpy(np.asarray(uncertain_map, dtype=np.float32)).float()
         proto_pseudo = torch.from_numpy(np.asarray(proto_pseudo, dtype=np.float32)).float()
 
-        print(pseudo_label.shape)
-        print(uncertain_map.shape)
-        print(proto_pseudo.shape)
         mask_0_obj = torch.zeros([1, pseudo_label.shape[1], pseudo_label.shape[2]])
         mask_0_bck = torch.zeros([1, pseudo_label.shape[1], pseudo_label.shape[2]])
         mask_0_obj[uncertain_map[0:1, ...] < 0.05] = 1.0
@@ -277,8 +273,6 @@ class FundusSegmentation_wsim(Dataset):
         img_name = anco_sample['img_name']
 
         gt = anco_sample['gt']
-        print(gt.shape)
-        print(pseudo_label.shape)
 
         gt_cup = self.extract_aff_lab_func(gt[0])
         label_cup = self.extract_aff_lab_func(pseudo_label)#torch.Size([100, 100])->torch.Size([34, 8832])
