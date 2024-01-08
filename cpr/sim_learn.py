@@ -140,7 +140,7 @@ if __name__ == '__main__':
     
     for epoch_num in tqdm.tqdm(range(num_epochs), ncols=70):
         model.train()
-        loss_total, bg_loss, fg_loss, neg_loss = 0, 0, 0, 0
+        loss_total, bg_loss_total, fg_loss_total, neg_loss_total = 0, 0, 0, 0
         for batch_idx, (sample) in enumerate(train_loader):
             data, label_cup, img_name, gt_cup = sample
 
