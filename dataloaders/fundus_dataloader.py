@@ -16,7 +16,7 @@ def GetValidTest(base_dir,
     image_list = []
     root_folder = os.path.join(self._base_dir, dataset,split)
     # 遍历根目录下的所有文件夹
-    for folder_name in os.listdir(root_folder):
+    for folder_name in sorted([folder_name for folder_name in os.listdir(root_folder)]):
         folder_path = os.path.join(root_folder, folder_name)
         # 检查是否为文件夹
         if os.path.isdir(folder_path):
@@ -80,7 +80,7 @@ class FundusSegmentation(Dataset):
 
             root_folder = os.path.join(self._base_dir, dataset, self.split)
             # 遍历根目录下的所有文件夹
-            for folder_name in os.listdir(root_folder):
+            for folder_name in sorted([folder_name for folder_name in os.listdir(root_folder)]):
                 folder_path = os.path.join(root_folder, folder_name)
                 # 检查是否为文件夹
                 if os.path.isdir(folder_path):
