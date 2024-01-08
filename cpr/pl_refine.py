@@ -101,6 +101,7 @@ if __name__ == '__main__':
 
         orig_shape = img.shape
 
+        prob = prob.unsqueeze(0)
         print("prob.shape:",prob.shape)
         prob_upsample = F.interpolate(prob, size=(img.shape[2], img.shape[3]), mode='bilinear')
         #prob_upsample = prob_upsample.squeeze(0)
