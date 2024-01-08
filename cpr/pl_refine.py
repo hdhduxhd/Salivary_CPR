@@ -150,7 +150,7 @@ if __name__ == '__main__':
             pseudo_label_rw = (cam_rw>0.75).long().detach().cpu().numpy()###(0.75*torch.max(cam_rw_save))
 
             plt.subplot(1, 4, 4,title='after')
-            plt.imshow(pseudo_label_rw[1])
+            plt.imshow(pseudo_label_rw[0])
 
 
             dice_cam_rw_cup = dice_coefficient_numpy(np.expand_dims(pseudo_label_rw[0],0), gt[:,0])
