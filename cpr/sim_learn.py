@@ -140,7 +140,6 @@ if __name__ == '__main__':
     
     for epoch_num in tqdm.tqdm(range(num_epochs), ncols=70):
         model.train()
-        loss_total, bg_loss_total, fg_loss_total, neg_loss_total = 0, 0, 0, 0
         for batch_idx, (sample) in enumerate(train_loader):
             data, label_cup, img_name, gt_cup = sample
 
@@ -168,19 +167,13 @@ if __name__ == '__main__':
             loss_cup = bg_loss/4 + fg_loss/4 + neg_loss/2
 
             loss_aff = loss_cup
-            
             loss = loss_aff 
-            loss_total += loss
-            bg_loss_total += bg_loss
-            fg_loss_total += fg_loss
-            neg_loss_total += neg_loss
+            
             loss.backward()
             optim_gen.step()
             iter_num = iter_num + 1
 
-        wandb.log({"loss": loss_total/len(train_loader), "bg_loss": bg_loss_total/len(train_loader), "fg_loss": fg_loss_total/len(train_loader), "neg_loss": neg_loss_total/len(train_loader)})
-        #test
-        
+        #test        
         model_eval = model
         model_eval.eval()
         
@@ -217,9 +210,9 @@ if __name__ == '__main__':
                 'loss:%.4f %.4f %.4f %.4f' % avg_meter_cup.get('loss', 'bg_loss', 'fg_loss', 'neg_loss'),
                 'cnt:%.0f %.0f %.0f' % avg_meter_cup.get('bg_cnt', 'fg_cnt', 'neg_cnt')
                 )
+        wandb.log({"loss": avg_meter_cup.get('loss'), "bg_loss": avg_meter_cup.get('bg_loss'), "fg_loss": avg_meter_cup.get('fg_loss'), "neg_loss": avg_meter_cup.get('neg_loss')})
 
         avg_meter_cup.pop()   
-        wandb.finish()
         model.train()
 
     if not osp.exists('./log'):
@@ -228,3 +221,5 @@ if __name__ == '__main__':
     torch.save({
                 'model_state_dict': model.state_dict(),
                 }, './log/sim_learn_D2.pth.tar')
+
+    wandb.finish()
