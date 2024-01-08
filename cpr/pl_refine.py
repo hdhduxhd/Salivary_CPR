@@ -44,9 +44,11 @@ if __name__ == '__main__':
     parser.add_argument('--freeze-bn',type=bool,default=False)
     parser.add_argument('--pseudo', type=str, default='/kaggle/input/checkpoint-best/pseudolabel_south.npz')
     parser.add_argument('--radius',type=int,default=4)
+    parser.add_argument('-g', '--gpu', type=int, default=0)
 
     args = parser.parse_args()
     radius = args.radius
+    os.environ['CUDA_VISIBLE_DEVICES'] = str(args.gpu)
 
     model = netd.DeepLab(num_classes=1, backbone='mobilenet', output_stride=args.out_stride, sync_bn=args.sync_bn, freeze_bn=args.freeze_bn, image_res=800, radius=radius)
     
