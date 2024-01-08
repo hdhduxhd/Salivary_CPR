@@ -237,8 +237,8 @@ if __name__ == '__main__':
         val_cup_dice /= datanum_cnt
         cup_hd /= datanum_cnt_cup
         
-        #if not os.path.exists('./logs/train_target'):
-        #    os.mkdir('./logs/train_target')
+        if not os.path.exists('./log'):
+           os.mkdir('./log')
         if args.dataset == 'north':
             savefile = './log/cpr' + '_north' + '.pth.tar'
         elif args.dataset == 'south':
