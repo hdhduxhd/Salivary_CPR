@@ -105,6 +105,19 @@ if __name__ == '__main__':
     train_loader = DataLoader(db_train, batch_size=8, shuffle=False, num_workers=0)
     #test_loader = DataLoader(db_test, batch_size=1, shuffle=False, num_workers=0)
 
+    wandb.init(
+        # set the wandb project where this run will be logged
+        project="Salivary_Seg_CPR_sim_learn",
+    
+        # track hyperparameters and run metadata
+        config={
+        "learning_rate": 0.003,
+        "architecture": "deeplab",
+        "backbone": "mobilenet",
+        "dataset": "south"
+        }
+    )
+
     # 2. model
     model = netd.DeepLab(num_classes=1, backbone='mobilenet', output_stride=args.out_stride, sync_bn=args.sync_bn, freeze_bn=args.freeze_bn, radius=radius)
     
@@ -125,18 +138,7 @@ if __name__ == '__main__':
     best_avg = 0.0
     iter_num = 0
     avg_meter_cup = pyutils.AverageMeter('loss', 'bg_loss', 'fg_loss', 'neg_loss', 'bg_cnt', 'fg_cnt', 'neg_cnt')
-    wandb.init(
-        # set the wandb project where this run will be logged
-        project="Salivary_Seg_CPR_sim_learn",
     
-        # track hyperparameters and run metadata
-        config={
-        "learning_rate": 0.003,
-        "architecture": "deeplab",
-        "backbone": "mobilenet",
-        "dataset": "south"
-        }
-    )
     for epoch_num in tqdm.tqdm(range(num_epochs), ncols=70):
         model.train()
         for batch_idx, (sample) in enumerate(train_loader):
