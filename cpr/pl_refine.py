@@ -5,6 +5,7 @@ import torchvision
 import argparse
 import importlib
 import numpy as np
+import random
 
 from torch.utils.data import DataLoader
 import scipy.misc
