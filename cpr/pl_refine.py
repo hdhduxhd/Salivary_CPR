@@ -120,6 +120,7 @@ if __name__ == '__main__':
         with torch.no_grad():
             _, _, _, aff_cup = model.forward(img.cuda(), True)
             aff_mat_cup = torch.pow(aff_cup, args.beta)
+            print("aff_mat_cup.shape: ",aff_mat_cup.shape)
 
             trans_mat_cup = aff_mat_cup / torch.sum(aff_mat_cup, dim=0, keepdim=True)
 
@@ -128,11 +129,12 @@ if __name__ == '__main__':
 
             cam_vec_cup = cam[:,0].view(1,-1)
 
-            # print("cam_vec_cup.shape:",cam_vec_cup.shape)
-            # print("trans_mat_cup.shape:",trans_mat_cup.shape)
+            print("cam_vec_cup.shape:",cam_vec_cup.shape)
+            print("trans_mat_cup.shape:",trans_mat_cup.shape)
             cam_rw_cup = torch.matmul(cam_vec_cup.cuda(), trans_mat_cup)
 
             cam_rw_cup = cam_rw_cup.view(1, 1, dheight, dwidth)
+            print("cam_rw_cup.shape:",cam_rw_cup.shape)
 
             cam_rw_save_cup = torch.nn.Upsample((512, 512), mode='bilinear')(cam_rw_cup)
             cam_rw = (cam_rw_save_cup[0,0]/torch.max(cam_rw_save_cup[0,0])).unsqueeze(0)
