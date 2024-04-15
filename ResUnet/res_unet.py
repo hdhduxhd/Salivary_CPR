@@ -171,7 +171,8 @@ class ResNet(nn.Module):
         # print(x.shape)
         # print(conv1.shape)
         x=torch.cat([x,conv1],dim=1)
-        out=self.dconv_last(x)
+        # out=self.dconv_last(x)
+        out=torch.sigmoid(self.dconv_last(x))
 
         return out
 
