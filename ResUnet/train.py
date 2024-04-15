@@ -24,7 +24,7 @@ parser.add_argument('--datasetS', type=str, default='west', help='test folder id
 parser.add_argument('--datasetT', type=str, default='north', help='/kaggle/input/dataset/north')
 parser.add_argument('--batch-size', type=int, default=8, help='batch size for training the model')
 parser.add_argument('--data-dir', default='/kaggle/input/dataset', help='data root path')
-parser.add_argument('--num_epochs', default=20, help='number of epoch')
+parser.add_argument('--num_epochs', type=int, default=20, help='number of epoch')
 
 args = parser.parse_args()
 
