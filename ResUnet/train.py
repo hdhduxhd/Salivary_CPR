@@ -32,7 +32,7 @@ device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 # 1. dataset
 composed_transforms_tr = transforms.Compose([
     #tr.Resize(512),###
-    # tr.RandomScaleCrop(512),
+    tr.RandomScaleCrop(128),
     tr.RandomRotate(),
     tr.RandomFlip(),
     tr.elastic_transform(),
@@ -45,7 +45,7 @@ composed_transforms_tr = transforms.Compose([
 
 composed_transforms_ts = transforms.Compose([
     # tr.RandomCrop(512),
-    # tr.Resize(512),
+    tr.Resize(128),
     tr.Normalize_tf(),
     tr.ToTensor()
 ])
