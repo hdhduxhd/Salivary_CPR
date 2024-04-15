@@ -107,7 +107,7 @@ for epoch in range(num_epochs):
             dice = dice_coeff(outputs, targets)
             total_dice += dice.item()
     
-    print('Epoch [{}/{}], Source Test Dice: {:.4f}'.format(epoch+1, num_epochs, total_dice/len(domain_loader_val)))
+    print('Epoch [{}/{}], Source Test Dice: {:.4f}'.format(epoch+1, num_epochs, total_dice/len(domain_loader_val.dataset)))
 
     total_dice = 0
     with torch.no_grad():
@@ -119,4 +119,4 @@ for epoch in range(num_epochs):
             dice = dice_coeff(outputs, targets)
             total_dice += dice.item()
     
-    print('Epoch [{}/{}], Target Test Dice: {:.4f}'.format(epoch+1, num_epochs, total_dice/len(domain_loaderT)))
+    print('Epoch [{}/{}], Target Test Dice: {:.4f}'.format(epoch+1, num_epochs, total_dice/len(domain_loaderT.dataset)))
