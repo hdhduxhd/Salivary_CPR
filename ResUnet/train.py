@@ -71,6 +71,7 @@ criterion = nn.MSELoss()
 optimizer = optim.Adam(model.parameters(), lr=0.001)
 # 训练ResU-net模型
 
+max_dice = 0
 for epoch in range(args.num_epochs):
     total_loss = 0
 
@@ -108,6 +109,9 @@ for epoch in range(args.num_epochs):
             total_dice += dice.item()
     
     print('Epoch [{}/{}], Source Test Dice: {:.4f}'.format(epoch+1, args.num_epochs, total_dice/len(domain_loader_val.dataset)))
+    if total_dice > max_dice:
+        max_dice = total_dice
+        torch.save(model.state_dict(), "./best_model_source.pth")
 
     total_dice = 0
     with torch.no_grad():
