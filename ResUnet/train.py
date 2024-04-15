@@ -24,6 +24,7 @@ parser.add_argument('--datasetS', type=str, default='west', help='test folder id
 parser.add_argument('--datasetT', type=str, default='north', help='/kaggle/input/dataset/north')
 parser.add_argument('--batch-size', type=int, default=8, help='batch size for training the model')
 parser.add_argument('--data-dir', default='/kaggle/input/dataset', help='data root path')
+parser.add_argument('--num_epochs', default=20, help='number of epoch')
 
 args = parser.parse_args()
 
@@ -71,7 +72,7 @@ optimizer = optim.Adam(model.parameters(), lr=0.001)
 # 训练ResU-net模型
 num_epochs = 20
 
-for epoch in range(num_epochs):
+for epoch in range(args.num_epochs):
     total_loss = 0
 
     model.train()  # 设置为训练模式
