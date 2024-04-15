@@ -28,15 +28,15 @@ composed_transforms_ts = transforms.Compose([
     tr.ToTensor()
 ])
 
-domain = DL.FundusSegmentation(base_dir="/kaggle/input/dataset", dataset="west", transform=composed_transforms_tr)
-train_ratio = 0.7
-train_size = int(train_ratio * len(domain))
-test_size = len(domain) - train_size
-domain_S, domain_val = torch.utils.data.random_split(domain, [train_size, test_size])
-domain_loaderS = DataLoader(domain_S, batch_size=8, shuffle=True, num_workers=2, pin_memory=True)
-# domain_val._change_transform(composed_transforms_ts)
-domain_val.dataset.transform = composed_transforms_ts
-domain_loader_val = DataLoader(domain_val, batch_size=8, shuffle=False, num_workers=2, pin_memory=True)
-
-def test_dataloader():
-    return domain_loaderS, domain_loader_val
+def test_dataloader(source="west",target="north"):
+    domain = DL.FundusSegmentation(base_dir="/kaggle/input/dataset", dataset=source, transform=composed_transforms_tr)
+    train_ratio = 0.7
+    train_size = int(train_ratio * len(domain))
+    test_size = len(domain) - train_size
+    domain_S, domain_val = torch.utils.data.random_split(domain, [train_size, test_size])
+    domain_loaderS = DataLoader(domain_S, batch_size=8, shuffle=True, num_workers=2, pin_memory=True)
+    domain_val.dataset.transform = composed_transforms_ts
+    domain_loader_val = DataLoader(domain_val, batch_size=8, shuffle=False, num_workers=2, pin_memory=True)
+    domain_T = DL.FundusSegmentation(base_dir="/kaggle/input/dataset", dataset=target, transform=composed_transforms_ts)
+    domain_loaderT = DataLoader(domain_T, batch_size=8, shuffle=False, num_workers=2, pin_memory=True)
+    return domain_loaderS, domain_loader_val, domain_loaderT
