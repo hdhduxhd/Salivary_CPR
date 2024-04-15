@@ -10,7 +10,7 @@ import os
 import os.path as osp
 
 import sys
-sys.path[0]='/kaggle/working/CPR'
+sys.path[0]='/kaggle/working/Salivary_CPR'
 import argparse
 from torchvision import transforms
 from dataloaders import fundus_dataloader as DL
