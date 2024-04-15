@@ -70,7 +70,6 @@ model = resnet50(3, 1, True).to(device)
 criterion = nn.MSELoss()
 optimizer = optim.Adam(model.parameters(), lr=0.001)
 # 训练ResU-net模型
-num_epochs = 20
 
 for epoch in range(args.num_epochs):
     total_loss = 0
@@ -95,7 +94,7 @@ for epoch in range(args.num_epochs):
         
         total_loss += loss.item()
     
-    print('Epoch [{}/{}], Train Loss: {:.4f}'.format(epoch+1, num_epochs, total_loss/len(domain_loaderS)))
+    print('Epoch [{}/{}], Train Loss: {:.4f}'.format(epoch+1, args.num_epochs, total_loss/len(domain_loaderS)))
 
     model.eval()  # 设置为评估模式
     total_dice = 0
@@ -108,7 +107,7 @@ for epoch in range(args.num_epochs):
             dice = dice_coeff(outputs, targets)
             total_dice += dice.item()
     
-    print('Epoch [{}/{}], Source Test Dice: {:.4f}'.format(epoch+1, num_epochs, total_dice/len(domain_loader_val.dataset)))
+    print('Epoch [{}/{}], Source Test Dice: {:.4f}'.format(epoch+1, args.num_epochs, total_dice/len(domain_loader_val.dataset)))
 
     total_dice = 0
     with torch.no_grad():
@@ -120,4 +119,4 @@ for epoch in range(args.num_epochs):
             dice = dice_coeff(outputs, targets)
             total_dice += dice.item()
     
-    print('Epoch [{}/{}], Target Test Dice: {:.4f}'.format(epoch+1, num_epochs, total_dice/len(domain_loaderT.dataset)))
+    print('Epoch [{}/{}], Target Test Dice: {:.4f}'.format(epoch+1, args.num_epochs, total_dice/len(domain_loaderT.dataset)))
