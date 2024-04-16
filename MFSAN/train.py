@@ -199,7 +199,8 @@ for i in range(1, args.num_iters+1):
         mean_dice /= 2
         if mean_dice > max_source_dice:
             max_source_dice = mean_dice
-            torch.save(model.state_dict(), "./best_model_source_iter{}.pth".format(i))
+            print("___________________best model in source________________________")
+            torch.save(model.state_dict(), "./best_model_source.pth")
         #T
         total_dice = 0
         with torch.no_grad():
@@ -216,4 +217,5 @@ for i in range(1, args.num_iters+1):
             wandb_run.log({"target dice":total_dice/len(domain_loader_valT.dataset)})
         if total_dice/len(domain_loader_valT.dataset) > max_target_dice:
             max_target_dice = total_dice/len(domain_loader_valT.dataset)
-            torch.save(model.state_dict(), "./best_model_target_iter{}.pth".format(i))
+            print("___________________best model in target________________________")
+            torch.save(model.state_dict(), "./best_model_target.pth")
