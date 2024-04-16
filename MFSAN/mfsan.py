@@ -144,7 +144,7 @@ class ResNetV2(nn.Module):
         image_res = 512
         radius = 4
         self.predefined_featuresize = int(image_res//16)
-        self.ind_from, self.ind_to = get_indices_of_pairs(radius=radius, size=(self.predefined_featuresize, self.predefined_featuresize))
+        self.ind_from, self.ind_to = pyutils.get_indices_of_pairs(radius=radius, size=(self.predefined_featuresize, self.predefined_featuresize))
         self.ind_from = torch.from_numpy(self.ind_from); self.ind_to = torch.from_numpy(self.ind_to)
 
     def forward(self, x):
