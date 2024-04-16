@@ -65,7 +65,7 @@ domain_S1 = DL.FundusSegmentation(base_dir=args.data_dir, dataset=args.datasetS1
 train_size = int(train_ratio * len(domain_S1))
 test_size = len(domain_S1) - train_size
 domain_S1, domain_val1 = torch.utils.data.random_split(domain_S1, [train_size, test_size])
-domain_loaderS1 = DataLoader(domain_S1, batch_size=args.batch_size, shuffle=True, num_workers=2, pin_memory=True)
+domain_loaderS1 = DataLoader(domain_S1, batch_size=args.batch_size, shuffle=True, num_workers=2, pin_memory=True, drop_last=True)
 domain_iterS1 = iter(domain_loaderS1)
 domain_val1.dataset.transform = composed_transforms_ts
 domain_loader_val1 = DataLoader(domain_val1, batch_size=args.batch_size, shuffle=False, num_workers=2, pin_memory=True)
@@ -74,7 +74,7 @@ domain_S2 = DL.FundusSegmentation(base_dir=args.data_dir, dataset=args.datasetS2
 train_size = int(train_ratio * len(domain_S2))
 test_size = len(domain_S2) - train_size
 domain_S2, domain_val2 = torch.utils.data.random_split(domain_S2, [train_size, test_size])
-domain_loaderS2 = DataLoader(domain_S2, batch_size=args.batch_size, shuffle=True, num_workers=2, pin_memory=True)
+domain_loaderS2 = DataLoader(domain_S2, batch_size=args.batch_size, shuffle=True, num_workers=2, pin_memory=True, drop_last=True)
 domain_iterS2 = iter(domain_loaderS2)
 domain_val2.dataset.transform = composed_transforms_ts
 domain_loader_val2 = DataLoader(domain_val2, batch_size=args.batch_size, shuffle=False, num_workers=2, pin_memory=True)
@@ -83,7 +83,7 @@ domain_T = DL.FundusSegmentation(base_dir=args.data_dir, dataset=args.datasetT, 
 train_size = int(train_ratio * len(domain_T))
 test_size = len(domain_T) - train_size
 domain_T, domain_valT = torch.utils.data.random_split(domain_T, [train_size, test_size])
-domain_loaderT = DataLoader(domain_T, batch_size=args.batch_size, shuffle=True, num_workers=2, pin_memory=True)
+domain_loaderT = DataLoader(domain_T, batch_size=args.batch_size, shuffle=True, num_workers=2, pin_memory=True, drop_last=True)
 domain_iterT = iter(domain_loaderT)
 domain_valT.dataset.transform = composed_transforms_ts
 domain_loader_valT = DataLoader(domain_valT, batch_size=args.batch_size, shuffle=False, num_workers=2, pin_memory=True)
