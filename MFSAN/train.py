@@ -18,6 +18,7 @@ from dataloaders import custom_transforms as tr
 
 from MFSAN.mfsan import MFSAN
 from utils.metrics import *
+import wandb
 
 parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter,)
 parser.add_argument('--datasetS1', type=str, default='west', help='/kaggle/input/dataset/west')
@@ -28,7 +29,6 @@ parser.add_argument('--data-dir', default='/kaggle/input/dataset', help='data ro
 parser.add_argument('--num_iters', type=int, default=1000, help='number of epoch')
 parser.add_argument('--lr',  type=float, default=0.001, help='learning rate of model')
 parser.add_argument('--log_interval',  type=int, default=10, help='the interval of log train loss')
-parser.add_argument('--test_interval',  type=int, default=10, help='the interval of test to get the value of dice')
 parser.add_argument('--test_interval',  type=int, default=10, help='the interval of test to get the value of dice')
 parser.add_argument('--use_wandb', action='store_true', help='if specified, then init wandb logging')
 parser.add_argument('--wandb_project_name', type=str, default='Salivary_CPR_MFSAN', help='specify wandb project name')
@@ -87,15 +87,16 @@ domain_iterT = iter(domain_loaderT)
 domain_valT.dataset.transform = composed_transforms_ts
 domain_loader_valT = DataLoader(domain_valT, batch_size=args.batch_size, shuffle=False, num_workers=2, pin_memory=True)
 
-
+if args.use_wandb:
+    wandb_run = wandb.init(project=args.wandb_project_name, name="test") if not wandb.run else wandb.run
 
 model = MFSAN(img_size=512).to(device)
 # 定义损失函数和优化器
 criterion = nn.MSELoss()
 optimizer = optim.Adam(model.parameters(), lr=args.lr)
 # 训练ResU-net模型
-
-max_dice = 0
+max_source_dice = 0
+max_target_dice = 0
 for i in range(1, args.num_iters+1):
     model.train()  # 设置为训练模式
 
@@ -123,6 +124,8 @@ for i in range(1, args.num_iters+1):
 
     if i==1 or i % args.log_interval == 0:
         print('Train source1 iter: {} [({:.0f}%)]\tLoss: {:.6f}\tsoft_Loss: {:.6f}\tmmd_Loss: {:.6f}\tl1_Loss: {:.6f}'.format(i, 100. * i / args.num_iters, loss.item(), mse_loss.item(), mmd_loss.item(), l1_loss.item()))
+        if args.use_wandb:
+            wandb_run.log({"source1 loss":loss.item()})
 
     #S2 & T
     try:
@@ -148,52 +151,59 @@ for i in range(1, args.num_iters+1):
 
     if i==1 or i % args.log_interval == 0:
         print('Train source2 iter: {} [({:.0f}%)]\tLoss: {:.6f}\tsoft_Loss: {:.6f}\tmmd_Loss: {:.6f}\tl1_Loss: {:.6f}'.format(i, 100. * i / args.num_iters, loss.item(), mse_loss.item(), mmd_loss.item(), l1_loss.item()))
+        if args.use_wandb:
+            wandb_run.log({"source2 loss":loss.item()})
     
-    
-    for sample in domain_loaderS:
-        inputs = sample['image'].to(device)
-        targets = sample['map'].to(device)
-        
-        optimizer.zero_grad()
-        
-        # 前向传播
-        outputs = model(inputs)
-        
-        # 计算损失
-        loss = criterion(outputs, targets)
-        
-        # 反向传播和优化
-        loss.backward()
-        optimizer.step()
-        
-        total_loss += loss.item()
-    
-    print('Epoch [{}/{}], Train Loss: {:.4f}'.format(epoch+1, args.num_epochs, total_loss/len(domain_loaderS)))
-
-    model.eval()  # 设置为评估模式
-    total_dice = 0
-    with torch.no_grad():
-        for sample in domain_loader_val:
-            inputs = sample['image'].to(device)
-            targets = sample['map'].to(device)
-            
-            outputs = model(inputs)
-            dice = dice_coeff(outputs, targets)
-            total_dice += dice.item()
-    
-    print('Epoch [{}/{}], Source Test Dice: {:.4f}'.format(epoch+1, args.num_epochs, total_dice/len(domain_loader_val.dataset)))
-    if total_dice > max_dice:
-        max_dice = total_dice
-        torch.save(model.state_dict(), "./best_model_source.pth")
-
-    total_dice = 0
-    with torch.no_grad():
-        for sample in domain_loaderT:
-            inputs = sample['image'].to(device)
-            targets = sample['map'].to(device)
-            
-            outputs = model(inputs)
-            dice = dice_coeff(outputs, targets)
-            total_dice += dice.item()
-    
-    print('Epoch [{}/{}], Target Test Dice: {:.4f}'.format(epoch+1, args.num_epochs, total_dice/len(domain_loaderT.dataset)))
+    #test
+    if i==1 or i % args.test_interval == 0:
+        mean_dice = 0
+        model.eval()  # 设置为评估模式
+        #S1
+        total_dice = 0
+        with torch.no_grad():
+            for sample in domain_loader_val1:
+                inputs = sample['image'].to(device)
+                targets = sample['map'].to(device)
+                
+                outputs, _ = model(inputs, mark=3)
+                dice = dice_coeff(outputs, targets)
+                total_dice += dice.item()
+        print('Iter [{}/{}], Source1 Test Dice: {:.4f}'.format(i, args.num_iters, total_dice/len(domain_loader_val1.dataset)))
+        if args.use_wandb:
+            wandb_run.log({"source1 dice":total_dice/len(domain_loader_val1.dataset)})
+        mean_dice += total_dice/len(domain_loader_val1.dataset)
+        #S2
+        total_dice = 0
+        with torch.no_grad():
+            for sample in domain_loader_val2:
+                inputs = sample['image'].to(device)
+                targets = sample['map'].to(device)
+                
+                _, outputs = model(inputs, mark=3)
+                dice = dice_coeff(outputs, targets)
+                total_dice += dice.item()
+        print('Iter [{}/{}], Source2 Test Dice: {:.4f}'.format(i, args.num_iters, total_dice/len(domain_loader_val2.dataset)))
+        if args.use_wandb:
+            wandb_run.log({"source2 dice":total_dice/len(domain_loader_val2.dataset)})
+        mean_dice += total_dice/len(domain_loader_val2.dataset)
+        mean_dice /= 2
+        if mean_dice > max_source_dice:
+            max_source_dice = mean_dice
+            torch.save(model.state_dict(), "./best_model_source_iter{}.pth".format(i))
+        #T
+        total_dice = 0
+        with torch.no_grad():
+            for sample in domain_loader_valT:
+                inputs = sample['image'].to(device)
+                targets = sample['map'].to(device)
+                
+                pred1, pred2 = model(inputs, mark=3)
+                outputs = (pred1 + pred2) / 2
+                dice = dice_coeff(outputs, targets)
+                total_dice += dice.item()
+        print('Iter [{}/{}], Target Test Dice: {:.4f}'.format(i, args.num_iters, total_dice/len(domain_loader_valT.dataset)))
+        if args.use_wandb:
+            wandb_run.log({"target dice":total_dice/len(domain_loader_valT.dataset)})
+        if total_dice/len(domain_loader_valT.dataset) > max_target_dice:
+            max_target_dice = total_dice/len(domain_loader_valT.dataset)
+            torch.save(model.state_dict(), "./best_model_target_iter{}.pth".format(i))
