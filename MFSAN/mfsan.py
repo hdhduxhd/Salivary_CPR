@@ -178,8 +178,8 @@ class ResNetV2(nn.Module):
 
         f_cup = f_cup.view(f_cup.size(0), f_cup.size(1), -1)
 
-        ff = torch.index_select(f_cup, dim=2, index=ind_from.to(device))
-        ft = torch.index_select(f_cup, dim=2, index=ind_to.to(device))
+        ff = torch.index_select(f_cup, dim=2, index=ind_from.to(x.device))
+        ft = torch.index_select(f_cup, dim=2, index=ind_to.to(x.device))
 
         ff = torch.unsqueeze(ff, dim=2)
         ft = ft.view(ft.size(0), ft.size(1), -1, ff.size(3))
