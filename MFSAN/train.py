@@ -28,7 +28,9 @@ parser.add_argument('--datasetT', type=str, default='north', help='/kaggle/input
 parser.add_argument('--batch-size', type=int, default=8, help='batch size for training the model')
 parser.add_argument('--data-dir', default='/kaggle/input/dataset', help='data root path')
 parser.add_argument('--num_iters', type=int, default=1000, help='number of epoch')
-parser.add_argument('--lr',  type=float, default=0.001, help='learning rate of model')
+parser.add_argument('--lr0',  type=float, default=0.001, help='learning rate of model')
+parser.add_argument('--lr1',  type=float, default=0.01, help='learning rate of model')
+parser.add_argument('--l2_decay',  type=float, default=5e-4, help='decay')
 parser.add_argument('--log_interval',  type=int, default=10, help='the interval of log train loss')
 parser.add_argument('--test_interval',  type=int, default=10, help='the interval of test to get the value of dice')
 parser.add_argument('--use_wandb', action='store_true', help='if specified, then init wandb logging')
@@ -94,7 +96,14 @@ if args.use_wandb:
 model = MFSAN(img_size=512).to(device)
 # 定义损失函数和优化器
 criterion = nn.MSELoss()
-optimizer = optim.Adam(model.parameters(), lr=args.lr)
+# optimizer = optim.Adam(model.parameters(), lr=args.lr)
+optimizer = torch.optim.Adam([
+        {'params': model.sharedNet.parameters()},
+        {'params': model.cls_fc_son1.parameters(), 'lr': args.lr0},
+        {'params': model.cls_fc_son2.parameters(), 'lr': args.lr0},
+        {'params': model.sonnet1.parameters(), 'lr': args.lr1},
+        {'params': model.sonnet2.parameters(), 'lr': args.lr1},
+    ], lr=args.lr0, weight_decay=args.l2_decay)
 # 训练ResU-net模型
 max_source_dice = 0
 max_target_dice = 0
