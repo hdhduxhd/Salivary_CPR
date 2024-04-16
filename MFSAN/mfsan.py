@@ -10,6 +10,7 @@ import torch.nn.functional as F
 from torch.autograd import Variable
 from torch.nn.modules.utils import _pair
 from torch.nn import CrossEntropyLoss, Dropout, Softmax, Linear, Conv2d, LayerNorm
+from cpr.tool import pyutils
 
 def guassian_kernel(source, target, kernel_mul=2.0, kernel_num=5, fix_sigma=None):
     n_samples = int(source.size()[0])+int(target.size()[0])
@@ -107,7 +108,7 @@ class ResNetV2(nn.Module):
 
     def __init__(self, block_units, width_factor):
         super().__init__()
-        width = int(64 * width_factor)
+        width = int(32 * width_factor)
         self.width = width
 
         self.root = nn.Sequential(OrderedDict([
@@ -119,18 +120,32 @@ class ResNetV2(nn.Module):
 
         self.body = nn.Sequential(OrderedDict([
             ('block1', nn.Sequential(OrderedDict(
-                [('unit1', PreActBottleneck(cin=width, cout=width*4, cmid=width))] +
-                [(f'unit{i:d}', PreActBottleneck(cin=width*4, cout=width*4, cmid=width)) for i in range(2, block_units[0] + 1)],
+                [('unit1', PreActBottleneck(cin=width, cout=width*2, cmid=width))] +
+                [(f'unit{i:d}', PreActBottleneck(cin=width*2, cout=width*2, cmid=width)) for i in range(2, block_units[0] + 1)],
                 ))),
             ('block2', nn.Sequential(OrderedDict(
-                [('unit1', PreActBottleneck(cin=width*4, cout=width*8, cmid=width*2, stride=2))] +
-                [(f'unit{i:d}', PreActBottleneck(cin=width*8, cout=width*8, cmid=width*2)) for i in range(2, block_units[1] + 1)],
+                [('unit1', PreActBottleneck(cin=width*2, cout=width*4, cmid=width*2, stride=2))] +
+                [(f'unit{i:d}', PreActBottleneck(cin=width*4, cout=width*4, cmid=width*2)) for i in range(2, block_units[1] + 1)],
                 ))),
             ('block3', nn.Sequential(OrderedDict(
-                [('unit1', PreActBottleneck(cin=width*8, cout=width*16, cmid=width*4, stride=2))] +
-                [(f'unit{i:d}', PreActBottleneck(cin=width*16, cout=width*16, cmid=width*4)) for i in range(2, block_units[2] + 1)],
+                [('unit1', PreActBottleneck(cin=width*4, cout=width*8, cmid=width*4, stride=2))] +
+                [(f'unit{i:d}', PreActBottleneck(cin=width*8, cout=width*8, cmid=width*4)) for i in range(2, block_units[2] + 1)],
                 ))),
         ]))
+        
+        self.aff_cup = torch.nn.Conv2d(width*8, width*8, 1, bias=False)
+        torch.nn.init.xavier_uniform_(self.aff_cup.weight, gain=4)
+        self.bn_cup = nn.BatchNorm2d(width*8)
+        self.bn_cup.weight.data.fill_(1)
+        self.bn_cup.bias.data.zero_()
+
+        self.from_scratch_layers = [self.aff_cup, self.bn_cup]
+        
+        image_res = 512
+        radius = 4
+        self.predefined_featuresize = int(image_res//16)
+        self.ind_from, self.ind_to = get_indices_of_pairs(radius=radius, size=(self.predefined_featuresize, self.predefined_featuresize))
+        self.ind_from = torch.from_numpy(self.ind_from); self.ind_to = torch.from_numpy(self.ind_to)
 
     def forward(self, x):
         features = []
@@ -150,7 +165,27 @@ class ResNetV2(nn.Module):
                 feat = x
             features.append(feat)
         x = self.body[-1](x)
-        return x, features[::-1]
+        
+        feature = x
+        f_cup = F.relu(self.bn_cup(self.aff_cup(feature)))###bn
+
+        if f_cup.size(2) == self.predefined_featuresize and f_cup.size(3) == self.predefined_featuresize:
+            ind_from = self.ind_from
+            ind_to = self.ind_to
+        else:
+            print('featuresize error')
+            sys.exit()
+
+        f_cup = f_cup.view(f_cup.size(0), f_cup.size(1), -1)
+
+        ff = torch.index_select(f_cup, dim=2, index=ind_from.to(device))
+        ft = torch.index_select(f_cup, dim=2, index=ind_to.to(device))
+
+        ff = torch.unsqueeze(ff, dim=2)
+        ft = ft.view(ft.size(0), ft.size(1), -1, ff.size(3))
+
+        aff_cup = torch.exp(-torch.mean(torch.abs(ft-ff), dim=1))
+        return x, features[::-1], aff_cup
 
 class Embeddings(nn.Module):
     """Construct the embeddings from patch, position embeddings.
@@ -167,7 +202,6 @@ class Embeddings(nn.Module):
         patch_size_real = (patch_size[0] * 16, patch_size[1] * 16)
         n_patches = (img_size[0] // patch_size_real[0]) * (img_size[1] // patch_size_real[1])  
 
-        in_channels = 64 * 16
         self.patch_embeddings = Conv2d(in_channels=in_channels,
                                        out_channels=768,
                                        kernel_size=patch_size,
@@ -185,10 +219,9 @@ class Embeddings(nn.Module):
         embeddings = x + self.position_embeddings
         embeddings = self.dropout(embeddings)
         return embeddings
-
-    def swish(x):
-    return x * torch.sigmoid(x)
   
+def swish(x):
+    return x * torch.sigmoid(x)
 ACT2FN = {"gelu": torch.nn.functional.gelu, "relu": torch.nn.functional.relu, "swish": swish}
 
 class Attention(nn.Module):
@@ -222,9 +255,16 @@ class Attention(nn.Module):
         query_layer = self.transpose_for_scores(mixed_query_layer)
         key_layer = self.transpose_for_scores(mixed_key_layer)
         value_layer = self.transpose_for_scores(mixed_value_layer)
+#         cos_layer = self.transpose_for_scores(hidden_states)
+        
+#         dot_product = torch.matmul(cos_layer, cos_layer.transpose(-1,-2))
+#         norm = torch.norm(cos_layer, dim=-1).unsqueeze(-1)
+#         norm_matrix = torch.matmul(norm, norm.transpose(-1,-2))
+#         cos_matrix = torch.div(dot_product, norm_matrix)
 
         attention_scores = torch.matmul(query_layer, key_layer.transpose(-1, -2))
         attention_scores = attention_scores / math.sqrt(self.attention_head_size)
+#         attention_scores = torch.mul(attention_scores, cos_matrix)
         attention_probs = self.softmax(attention_scores)
         weights = attention_probs if self.vis else None
         attention_probs = self.attn_dropout(attention_probs)
@@ -303,9 +343,9 @@ class Encoder(nn.Module):
         return encoded, attn_weights
 
 class Transformer(nn.Module):
-    def __init__(self, img_size=224, vis=False):
+    def __init__(self, img_size=224, in_channels=3, vis=False):
         super(Transformer, self).__init__()
-        self.embeddings = Embeddings(img_size=img_size)
+        self.embeddings = Embeddings(img_size=img_size, in_channels=in_channels)
         self.encoder = Encoder(vis)
 
     def forward(self, input_ids):
@@ -313,7 +353,7 @@ class Transformer(nn.Module):
         encoded, attn_weights = self.encoder(embedding_output)  # (B, n_patch, hidden)
         return encoded, attn_weights
 
-  class Conv2dReLU(nn.Sequential):
+class Conv2dReLU(nn.Sequential):
     def __init__(self,in_channels,out_channels,kernel_size,padding=0,stride=1,use_batchnorm=True,):
         conv = nn.Conv2d(in_channels,out_channels,kernel_size,stride=stride,padding=padding,bias=not (use_batchnorm),)
         relu = nn.ReLU(inplace=True)
@@ -357,7 +397,7 @@ class DecoderBlock(nn.Module):
 class DecoderCup(nn.Module):
     def __init__(self,img_size=512):
         super().__init__()
-        head_channels = 512
+        head_channels = 256
         self.conv_more = Conv2dReLU(
             768,
             head_channels,
@@ -365,7 +405,7 @@ class DecoderCup(nn.Module):
             padding=1,
             use_batchnorm=True,
         )
-        decoder_channels = (256, 128, 64, 16)
+        decoder_channels = (128, 64, 32, 16)
         in_channels = [head_channels] + list(decoder_channels[:-1])
         out_channels = decoder_channels
         sf = img_size//16//16
@@ -374,7 +414,7 @@ class DecoderCup(nn.Module):
         self.up = nn.UpsamplingBilinear2d(scale_factor=sf)
 
         if 3 != 0:
-            skip_channels = [512, 256, 64, 16]
+            skip_channels = [128, 64, 32, 16]
             for i in range(4-3):  # re-select the skip channels according to n_skip
                 skip_channels[3-i]=0
 
@@ -402,7 +442,7 @@ class DecoderCup(nn.Module):
             x = decoder_block(x, skip=skip)
         return x
 
-  class SegmentationHead(nn.Sequential):
+class SegmentationHead(nn.Sequential):
 
     def __init__(self, in_channels, out_channels, kernel_size=3, upsampling=1):
         conv2d = nn.Conv2d(in_channels, out_channels, kernel_size=kernel_size, padding=kernel_size // 2)
@@ -447,10 +487,9 @@ class MFSAN(nn.Module):
 
     def __init__(self, img_size=224):
         super(MFSAN, self).__init__()
-        self.sharedNet1 = ResNetV2((3, 4, 9), 1)
-        self.sharedNet2 = ResNetV2((3, 4, 9), 1)
-        self.sonnet1 = Transformer(img_size=img_size)
-        self.sonnet2 = Transformer(img_size=img_size)
+        self.sharedNet = ResNetV2((3, 4, 9), 1)
+        self.sonnet1 = Transformer(img_size=img_size, in_channels=256)
+        self.sonnet2 = Transformer(img_size=img_size, in_channels=256)
         self.GRL=GRL()
         self.discriminator1=nn.Sequential(
             nn.Linear(16*16*768,100),
@@ -475,8 +514,8 @@ class MFSAN(nn.Module):
         mmd_loss = 0
         if self.training == True:
             if mark == 1:
-                data_src, data_src_feature = self.sharedNet1(data_src)
-                data_tgt, data_tgt_feature = self.sharedNet1(data_tgt)
+                data_src, data_src_feature, _ = self.sharedNet(data_src)
+                data_tgt, data_tgt_feature, _ = self.sharedNet(data_tgt)
 
                 data_tgt_son1 = self.sonnet1(data_tgt)[0]
 
@@ -510,8 +549,8 @@ class MFSAN(nn.Module):
                 return cls_loss, mmd_loss, l1_loss
 
             if mark == 2:
-                data_src, data_src_feature = self.sharedNet2(data_src)
-                data_tgt, data_tgt_feature = self.sharedNet2(data_tgt)
+                data_src, data_src_feature, _ = self.sharedNet(data_src)
+                data_tgt, data_tgt_feature, _ = self.sharedNet(data_tgt)
 
                 data_tgt_son2 = self.sonnet2(data_tgt)[0]
 
@@ -546,8 +585,8 @@ class MFSAN(nn.Module):
                 return cls_loss, mmd_loss, l1_loss
 
         else:
-            data1, feature1 = self.sharedNet1(data_src)
-            data2, feature2 = self.sharedNet2(data_src)
+            data1, feature1, _ = self.sharedNet(data_src)
+            data2, feature2, _ = self.sharedNet(data_src)
 
             fea_son1 = self.sonnet1(data1)[0]
             pred1 = self.cls_fc_son1(fea_son1, feature1)
