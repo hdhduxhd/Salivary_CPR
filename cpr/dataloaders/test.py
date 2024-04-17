@@ -1,5 +1,5 @@
 import sys
-sys.path[0]='/kaggle/working/CPR/cpr'
+sys.path[0]='/kaggle/working/Salivary_CPR/cpr'
 
 import torch
 import numpy as np
