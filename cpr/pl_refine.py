@@ -13,7 +13,7 @@ import torch.nn.functional as F
 import os.path
 import imageio
 import sys
-sys.path[0]='/kaggle/working/CPR/cpr'
+sys.path[0]='/kaggle/working/Salivary_CPR/cpr'
 from dataloaders import fundus_dataloader as DL
 from dataloaders import custom_transforms as tr
 from torchvision import transforms
