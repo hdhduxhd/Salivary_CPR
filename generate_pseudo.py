@@ -5,7 +5,7 @@ import argparse
 import os
 import os.path as osp
 import sys
-sys.path[0]='/kaggle/working/CPR'
+sys.path[0]='/kaggle/working/Salivary_CPR'
 
 import torch.nn.functional as F
 
