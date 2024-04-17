@@ -12,7 +12,7 @@ import torch.backends.cudnn as cudnn
 import random
 import numpy as np
 import sys
-sys.path[0]='/kaggle/working/CPR/cpr'
+sys.path[0]='/kaggle/working/Salivary_CPR/cpr'
 
 bceloss = torch.nn.BCELoss(reduction='none')
 seed = 3377
