@@ -137,6 +137,10 @@ if __name__ == '__main__':
     elif args.dataset=="west":
         npfilename = '/kaggle/input/checkpoint-best/pseudolabel_west.npz'
         npfilename_new = '/kaggle/input/checkpoint-best/pseudolabel_west_new.npz'
+
+    elif args.dataset=="north":
+        npfilename = '/kaggle/input/checkpoint-best/pseudolabel_north.npz'
+        npfilename_new = '/kaggle/input/checkpoint-best/pseudolabel_north_new.npz'
     
     npdata = np.load(npfilename, allow_pickle=True)
     #uncertain_dic = npdata['arr_1'].item()
