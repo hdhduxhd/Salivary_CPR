@@ -227,6 +227,8 @@ if __name__ == '__main__':
                 cup_dice = dice_coefficient_numpy(prediction[:,0, ...], target_numpy[:, 0, ...])
 
                 for i in range(prediction.shape[0]):
+                    print(prediction[i,0,...].shape)
+                    print(target_numpy[i,0,...].shape)
                     hd_tmp = hd_numpy(prediction[i, 0, ...], target_numpy[i, 0, ...], get_hd)
                     if np.isnan(hd_tmp):
                         datanum_cnt_cup -= 1.0
