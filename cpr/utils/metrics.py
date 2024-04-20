@@ -130,17 +130,20 @@ def DiceLoss(input, target):
                 (iflat.sum() + tflat.sum() + smooth))
 
 def jaccard_index(binary_segmentation, binary_gt_label):
-    dice_coeff = dice_coefficient_numpy(binary_segmentation, binary_gt_label)
-    jaccard_index = dice_coeff / (2 - dice_coeff)
+    intersection = np.logical_and(binary_segmentation, binary_gt_label)
+    union = np.logical_or(binary_segmentation, binary_gt_label)
+    jaccard_index = np.sum(intersection) / np.sum(union)
     return jaccard_index
 
 def pixel_accuracy(binary_segmentation, binary_gt_label):
-    pixel_accuracy = np.mean(binary_segmentation == binary_gt_label)
+    correct_pixels = np.sum(binary_segmentation == binary_gt_label)
+    total_pixels = np.prod(binary_segmentation.shape)
+    pixel_accuracy = correct_pixels / total_pixels
     return pixel_accuracy
 
 def pixel_sensitivity(binary_segmentation, binary_gt_label):
     true_positive = np.sum(np.logical_and(binary_segmentation, binary_gt_label))
-    false_negative = np.sum(np.logical_and(binary_gt_label, np.logical_not(binary_segmentation)))
+    false_negative = np.sum(np.logical_and(np.logical_not(binary_segmentation), binary_gt_label))
     pixel_sensitivity = true_positive / (true_positive + false_negative)
     return pixel_sensitivity
 
