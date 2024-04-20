@@ -17,7 +17,7 @@ sys.path[0]='/kaggle/working/Salivary_CPR/cpr'
 bceloss = torch.nn.BCELoss(reduction='none')
 seed = 3377
 savefig = False
-get_hd = False
+get_hd = True
 model_save = True#False
 if True:
     os.environ['PYTHONHASHSEED'] = str(seed)
@@ -209,6 +209,10 @@ if __name__ == '__main__':
         val_cup_dice = 0.0
         datanum_cnt = 0.0
         cup_hd = 0.0
+        ja = 0.0
+        ac = 0.0
+        se = 0.0
+        sp = 0.0
         datanum_cnt_cup = 0.0
         with torch.no_grad():
             for batch_idx, (sample) in enumerate(test_loader):
@@ -228,10 +232,18 @@ if __name__ == '__main__':
 
                 for i in range(prediction.shape[0]):
                     hd_tmp = hd_numpy(prediction[i, 0, ...], target_numpy[i, 0, ...], get_hd)
+                    ja_tmp = jaccard_index(prediction[i, 0, ...], target_numpy[i, 0, ...])
+                    ac_tmp = pixel_accuracy(prediction[i, 0, ...], target_numpy[i, 0, ...])
+                    se_tmp = pixel_sensitivity(prediction[i, 0, ...], target_numpy[i, 0, ...])
+                    sp_tmp = pixel_specificity(prediction[i, 0, ...], target_numpy[i, 0, ...])
                     if np.isnan(hd_tmp):
                         datanum_cnt_cup -= 1.0
                     else:
                         cup_hd += hd_tmp
+                        ja += ja_tmp
+                        ac += ac_tmp
+                        se += se_tmp
+                        sp += sp_tmp
                 
                 val_cup_dice += np.sum(cup_dice)
 
@@ -240,6 +252,10 @@ if __name__ == '__main__':
 
         val_cup_dice /= datanum_cnt
         cup_hd /= datanum_cnt_cup
+        ja /= datanum_cnt_cup
+        ac /= datanum_cnt_cup
+        se /= datanum_cnt_cup
+        sp /= datanum_cnt_cup
         
         if not os.path.exists('./log'):
            os.mkdir('./log')
@@ -254,8 +270,8 @@ if __name__ == '__main__':
             best_cup_hd = cup_hd
         
 
-        print("cup: %.4f cup: %.4f" % (val_cup_dice, cup_hd))
-        wandb.log({"dice": val_cup_dice, "hd": cup_hd})
+        print("cup: %.4f cup: %.4f cup: %.4f cup: %.4f cup: %.4f cup: %.4f" % (val_cup_dice, cup_hd, ja, ac, se sp))
+        wandb.log({"dice": val_cup_dice, "hd": cup_hd, "ja": ja, "ac": ac, "se": se, "sp": sp})
         #print("best cup: %.4f best disc: %.4f best avg: %.4f best cup: %.4f best disc: %.4f best avg: %.4f" %
         #      (best_val_cup_dice, best_val_disc_dice, best_avg, best_cup_hd, best_disc_hd, best_avg_hd))
         model.train()
