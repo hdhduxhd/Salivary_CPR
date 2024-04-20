@@ -110,6 +110,40 @@ def dice_coeff(pred, target):
     score = score.sum()
     return score
 
+def jaccard_coeff(pred, target):
+    target = target[:, 0, :, :]
+    pred = pred[:, 0, :, :]
+    smooth = 1e-5
+    num = pred.size(0)
+    m1 = pred.view(num, -1)
+    m2 = target.view(num, -1)
+    intersection = (m1 * m2).sum(1)
+    union = m1.sum(1) + m2.sum(1) - intersection
+    score = (intersection + smooth) / (union + smooth)
+    score = score.sum()
+    return score
+
+def pixel_accuracy(pred, target, threshold=0.5):
+    pred_binary = (pred > threshold).float()
+    correct_pixels = (pred_binary == target).sum().item()
+    total_pixels = target.numel()
+    accuracy = correct_pixels / total_pixels
+    return accuracy
+
+def pixel_sensitivity(pred, target, threshold=0.5):
+    pred_binary = (pred > threshold).float()
+    true_positives = ((pred_binary == 1) & (target == 1)).sum().item()
+    false_negatives = ((pred_binary == 0) & (target == 1)).sum().item()
+    sensitivity = true_positives / (true_positives + false_negatives)
+    return sensitivity
+
+def pixel_specificity(pred, target, threshold=0.5):
+    pred_binary = (pred > threshold).float()
+    true_negatives = ((pred_binary == 0) & (target == 0)).sum().item()
+    false_positives = ((pred_binary == 1) & (target == 0)).sum().item()
+    specificity = true_negatives / (true_negatives + false_positives)
+    return specificity
+
 def dice_coeff_2label(pred, target):
     """This definition generalize to real valued pred and target vector.
     This should be differentiable.
