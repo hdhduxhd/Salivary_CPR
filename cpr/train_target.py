@@ -270,7 +270,7 @@ if __name__ == '__main__':
             best_cup_hd = cup_hd
         
 
-        print("cup: %.4f cup: %.4f cup: %.4f cup: %.4f cup: %.4f cup: %.4f" % (val_cup_dice, cup_hd, ja, ac, se sp))
+        print("cup: %.4f cup: %.4f cup: %.4f cup: %.4f cup: %.4f cup: %.4f" % (val_cup_dice, cup_hd, ja, ac, se, sp))
         wandb.log({"dice": val_cup_dice, "hd": cup_hd, "ja": ja, "ac": ac, "se": se, "sp": sp})
         #print("best cup: %.4f best disc: %.4f best avg: %.4f best cup: %.4f best disc: %.4f best avg: %.4f" %
         #      (best_val_cup_dice, best_val_disc_dice, best_avg, best_cup_hd, best_disc_hd, best_avg_hd))
