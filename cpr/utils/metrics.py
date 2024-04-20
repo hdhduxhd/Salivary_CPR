@@ -69,8 +69,8 @@ def dice_numpy_medpy(binary_segmentation, binary_gt_label):
 def hd_numpy(binary_segmentation, binary_gt_label, get_hd):
 
     # turn all variables to booleans, just in case
-    binary_segmentation = np.asarray(binary_segmentation)
-    binary_gt_label = np.asarray(binary_gt_label)
+    binary_segmentation = np.asarray(binary_segmentation, dtype=bool)
+    binary_gt_label = np.asarray(binary_gt_label, dtype=bool)
 
     if get_hd:
         if np.sum(binary_segmentation) > 0 and np.sum(binary_gt_label) > 0:
@@ -130,24 +130,32 @@ def DiceLoss(input, target):
                 (iflat.sum() + tflat.sum() + smooth))
 
 def jaccard_index(binary_segmentation, binary_gt_label):
+    binary_segmentation = np.asarray(binary_segmentation, dtype=bool)
+    binary_gt_label = np.asarray(binary_gt_label, dtype=bool)
     intersection = np.logical_and(binary_segmentation, binary_gt_label)
     union = np.logical_or(binary_segmentation, binary_gt_label)
     jaccard_index = np.sum(intersection) / np.sum(union)
     return jaccard_index
 
 def pixel_accuracy(binary_segmentation, binary_gt_label):
+    binary_segmentation = np.asarray(binary_segmentation, dtype=bool)
+    binary_gt_label = np.asarray(binary_gt_label, dtype=bool)
     correct_pixels = np.sum(binary_segmentation == binary_gt_label)
     total_pixels = np.prod(binary_segmentation.shape)
     pixel_accuracy = correct_pixels / total_pixels
     return pixel_accuracy
 
 def pixel_sensitivity(binary_segmentation, binary_gt_label):
+    binary_segmentation = np.asarray(binary_segmentation, dtype=bool)
+    binary_gt_label = np.asarray(binary_gt_label, dtype=bool)
     true_positive = np.sum(np.logical_and(binary_segmentation, binary_gt_label))
     false_negative = np.sum(np.logical_and(np.logical_not(binary_segmentation), binary_gt_label))
     pixel_sensitivity = true_positive / (true_positive + false_negative)
     return pixel_sensitivity
 
 def pixel_specificity(binary_segmentation, binary_gt_label):
+    binary_segmentation = np.asarray(binary_segmentation, dtype=bool)
+    binary_gt_label = np.asarray(binary_gt_label, dtype=bool)
     true_negative = np.sum(np.logical_and(np.logical_not(binary_segmentation), np.logical_not(binary_gt_label)))
     false_positive = np.sum(np.logical_and(binary_segmentation, np.logical_not(binary_gt_label)))
     pixel_specificity = true_negative / (true_negative + false_positive)
