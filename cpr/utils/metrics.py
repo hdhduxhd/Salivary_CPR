@@ -129,35 +129,23 @@ def DiceLoss(input, target):
     return 1 - ((2. * intersection + smooth) /
                 (iflat.sum() + tflat.sum() + smooth))
 
-def threshold_predictions(pred, threshold):
-    # 将概率值根据阈值转换为二进制预测结果
-    pred_binary = (pred >= threshold).float()
-    return pred_binary
+def jaccard_index(binary_segmentation, binary_gt_label):
+    dice_coeff = dice_coefficient_numpy(binary_segmentation, binary_gt_label)
+    jaccard_index = dice_coeff / (2 - dice_coeff)
+    return jaccard_index
 
-def jaccard_index(pred, target):
-    pred = threshold_predictions(pred, 0.5)
-    intersection = torch.logical_and(pred, target)
-    union = torch.logical_or(pred, target)
-    jaccard = torch.sum(intersection) / torch.sum(union)
-    return jaccard.item()
+def pixel_accuracy(binary_segmentation, binary_gt_label):
+    pixel_accuracy = np.mean(binary_segmentation == binary_gt_label)
+    return pixel_accuracy
 
-def pixel_accuracy(pred, target):
-    pred = threshold_predictions(pred, 0.5)
-    correct = torch.sum(pred == target).item()
-    total = pred.numel()
-    accuracy = correct / total
-    return accuracy
+def pixel_sensitivity(binary_segmentation, binary_gt_label):
+    true_positive = np.sum(np.logical_and(binary_segmentation, binary_gt_label))
+    false_negative = np.sum(np.logical_and(binary_gt_label, np.logical_not(binary_segmentation)))
+    pixel_sensitivity = true_positive / (true_positive + false_negative)
+    return pixel_sensitivity
 
-def pixel_sensitivity(pred, target):
-    pred = threshold_predictions(pred, 0.5)
-    true_positive = torch.sum(torch.logical_and(pred == 1, target == 1)).item()
-    false_negative = torch.sum(torch.logical_and(pred == 0, target == 1)).item()
-    sensitivity = true_positive / (true_positive + false_negative)
-    return sensitivity
-
-def pixel_specificity(pred, target):
-    pred = threshold_predictions(pred, 0.5)
-    true_negative = torch.sum(torch.logical_and(pred == 0, target == 0)).item()
-    false_positive = torch.sum(torch.logical_and(pred == 1, target == 0)).item()
-    specificity = true_negative / (true_negative + false_positive)
-    return specificity
+def pixel_specificity(binary_segmentation, binary_gt_label):
+    true_negative = np.sum(np.logical_and(np.logical_not(binary_segmentation), np.logical_not(binary_gt_label)))
+    false_positive = np.sum(np.logical_and(binary_segmentation, np.logical_not(binary_gt_label)))
+    pixel_specificity = true_negative / (true_negative + false_positive)
+    return pixel_specificity
