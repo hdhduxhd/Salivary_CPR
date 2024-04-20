@@ -128,3 +128,36 @@ def DiceLoss(input, target):
 
     return 1 - ((2. * intersection + smooth) /
                 (iflat.sum() + tflat.sum() + smooth))
+
+def threshold_predictions(pred, threshold):
+    # 将概率值根据阈值转换为二进制预测结果
+    pred_binary = (pred >= threshold).float()
+    return pred_binary
+
+def jaccard_index(pred, target):
+    pred = threshold_predictions(pred, 0.5)
+    intersection = torch.logical_and(pred, target)
+    union = torch.logical_or(pred, target)
+    jaccard = torch.sum(intersection) / torch.sum(union)
+    return jaccard.item()
+
+def pixel_accuracy(pred, target):
+    pred = threshold_predictions(pred, 0.5)
+    correct = torch.sum(pred == target).item()
+    total = pred.numel()
+    accuracy = correct / total
+    return accuracy
+
+def pixel_sensitivity(pred, target):
+    pred = threshold_predictions(pred, 0.5)
+    true_positive = torch.sum(torch.logical_and(pred == 1, target == 1)).item()
+    false_negative = torch.sum(torch.logical_and(pred == 0, target == 1)).item()
+    sensitivity = true_positive / (true_positive + false_negative)
+    return sensitivity
+
+def pixel_specificity(pred, target):
+    pred = threshold_predictions(pred, 0.5)
+    true_negative = torch.sum(torch.logical_and(pred == 0, target == 0)).item()
+    false_positive = torch.sum(torch.logical_and(pred == 1, target == 0)).item()
+    specificity = true_negative / (true_negative + false_positive)
+    return specificity
