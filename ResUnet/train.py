@@ -139,6 +139,6 @@ for epoch in range(args.num_epochs):
         max_dice = total_dice
         torch.save(model.state_dict(), "./best_model_target.pth")
         print('Epoch [{}/{}], Target Test Dice: {:.4f}, Jaccard: {:.4f}, Accuracy: {:.4f}, Sensitivity: {:.4f}, Specificity: {:.4f}'
-              .format(epoch+1, args.num_epochs, total_dice/len(domain_loaderT.dataset), jaccard/len(domain_loader_valT.dataset), accuracy/len(domain_loader_valT.dataset),
-                     sensitivity/len(domain_loader_valT.dataset), specificity/len(domain_loader_valT.dataset)))
-        print(dice_binary/len(domain_loader_valT.dataset), ' ', jaccard_binary/len(domain_loader_valT.dataset))
+              .format(epoch+1, args.num_epochs, total_dice/len(domain_loaderT.dataset), jaccard/len(domain_loaderT.dataset), accuracy/len(domain_loaderT.dataset),
+                     sensitivity/len(domain_loaderT.dataset), specificity/len(domain_loaderT.dataset)))
+        print(dice_binary/len(domain_loaderT.dataset), ' ', jaccard_binary/len(domain_loaderT.dataset))
