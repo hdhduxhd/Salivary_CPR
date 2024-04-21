@@ -100,9 +100,9 @@ with torch.no_grad():
         dice = dice_coeff(outputs, targets)
         total_dice += dice.item()
         jaccard += jaccard_coeff(outputs, targets).item()
-        accuracy += pixel_accuracy(outputs, targets).item()
-        sensitivity += pixel_sensitivity(outputs, targets).item()
-        specificity += pixel_specificity(outputs, targets).item()
+        accuracy += pixel_accuracy(outputs, targets)
+        sensitivity += pixel_sensitivity(outputs, targets)
+        specificity += pixel_specificity(outputs, targets)
       
         outputs = (outputs > 0.5).float()
         dice_binary += dice_coeff(outputs, targets).item()
