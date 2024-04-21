@@ -109,9 +109,9 @@ for epoch in range(args.num_epochs):
             total_dice += dice.item()
     
     print('Epoch [{}/{}], Source Test Dice: {:.4f}'.format(epoch+1, args.num_epochs, total_dice/len(domain_loader_val.dataset)))
-    if total_dice > max_dice:
-        max_dice = total_dice
-        torch.save(model.state_dict(), "./best_model_source.pth")
+    # if total_dice > max_dice:
+    #     max_dice = total_dice
+    #     torch.save(model.state_dict(), "./best_model_source.pth")
 
     total_dice = 0
     jaccard, accuracy, sensitivity, specificity = 0, 0, 0, 0
@@ -134,8 +134,11 @@ for epoch in range(args.num_epochs):
             dice_binary += dice_coeff(outputs, targets).item()
             jaccard_binary += jaccard_coeff(outputs, targets).item()
 
-    
-    print('Epoch [{}/{}], Target Test Dice: {:.4f}, Jaccard: {:.4f}, Accuracy: {:.4f}, Sensitivity: {:.4f}, Specificity: {:.4f}'
-          .format(epoch+1, args.num_epochs, total_dice/len(domain_loaderT.dataset), jaccard/len(domain_loader_valT.dataset), accuracy/len(domain_loader_valT.dataset),
-                 sensitivity/len(domain_loader_valT.dataset), specificity/len(domain_loader_valT.dataset)))
-    print(dice_binary/len(domain_loader_valT.dataset), ' ', jaccard_binary/len(domain_loader_valT.dataset))
+
+    if total_dice > max_dice:
+        max_dice = total_dice
+        torch.save(model.state_dict(), "./best_model_target.pth")
+        print('Epoch [{}/{}], Target Test Dice: {:.4f}, Jaccard: {:.4f}, Accuracy: {:.4f}, Sensitivity: {:.4f}, Specificity: {:.4f}'
+              .format(epoch+1, args.num_epochs, total_dice/len(domain_loaderT.dataset), jaccard/len(domain_loader_valT.dataset), accuracy/len(domain_loader_valT.dataset),
+                     sensitivity/len(domain_loader_valT.dataset), specificity/len(domain_loader_valT.dataset)))
+        print(dice_binary/len(domain_loader_valT.dataset), ' ', jaccard_binary/len(domain_loader_valT.dataset))
