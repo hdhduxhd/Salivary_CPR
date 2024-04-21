@@ -114,6 +114,9 @@ for epoch in range(args.num_epochs):
         torch.save(model.state_dict(), "./best_model_source.pth")
 
     total_dice = 0
+    jaccard, accuracy, sensitivity, specificity = 0, 0, 0, 0
+    dice_binary = 0
+    jaccard_binary = 0
     with torch.no_grad():
         for sample in domain_loaderT:
             inputs = sample['image'].to(device)
@@ -122,5 +125,17 @@ for epoch in range(args.num_epochs):
             outputs = model(inputs)
             dice = dice_coeff(outputs, targets)
             total_dice += dice.item()
+            jaccard += jaccard_coeff(outputs, targets).item()
+            accuracy += pixel_accuracy(outputs, targets)
+            sensitivity += pixel_sensitivity(outputs, targets)
+            specificity += pixel_specificity(outputs, targets)
+
+            outputs = (outputs > 0.5).float()
+            dice_binary += dice_coeff(outputs, targets).item()
+            jaccard_binary += jaccard_coeff(outputs, targets).item()
+
     
-    print('Epoch [{}/{}], Target Test Dice: {:.4f}'.format(epoch+1, args.num_epochs, total_dice/len(domain_loaderT.dataset)))
+    print('Epoch [{}/{}], Target Test Dice: {:.4f}, Jaccard: {:.4f}, Accuracy: {:.4f}, Sensitivity: {:.4f}, Specificity: {:.4f}'
+          .format(epoch+1, args.num_epochs, total_dice/len(domain_loaderT.dataset), jaccard/len(domain_loader_valT.dataset), accuracy/len(domain_loader_valT.dataset),
+                 sensitivity/len(domain_loader_valT.dataset), specificity/len(domain_loader_valT.dataset)))
+    print(dice_binary/len(domain_loader_valT.dataset), ' ', jaccard_binary/len(domain_loader_valT.dataset))
