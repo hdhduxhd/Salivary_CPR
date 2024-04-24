@@ -525,14 +525,14 @@ class MFSAN(nn.Module):
                 src_domain_label = torch.zeros(batch_size, device=data_src.device)
                 src_domain_label = src_domain_label.long()
                 
-                mmd_loss += loss_domain(src_domain_output, src_domain_label)
+                # mmd_loss += loss_domain(src_domain_output, src_domain_label)
                 
                 tgt_domain_output = self.discriminator1(GRL.apply(data_tgt_son1.view(data_tgt_son1.size(0), -1),alpha))
                 tgt_domain_label = torch.ones(batch_size, device=data_src.device)
                 tgt_domain_label = tgt_domain_label.long()
-                mmd_loss += loss_domain(tgt_domain_output, tgt_domain_label)
+                # mmd_loss += loss_domain(tgt_domain_output, tgt_domain_label)
                 
-#                 mmd_loss += mmd(data_src.view(data_src.size(0), -1), data_tgt_son1.view(data_tgt_son1.size(0), -1))
+                # mmd_loss += mmd(data_src.view(data_src.size(0), -1), data_tgt_son1.view(data_tgt_son1.size(0), -1))
 
                 data_tgt_son1 = self.cls_fc_son1(data_tgt_son1, data_tgt_feature)
 
@@ -559,12 +559,12 @@ class MFSAN(nn.Module):
                 src_domain_output = self.discriminator2(GRL.apply(data_src.view(data_src.size(0), -1),alpha))
                 src_domain_label = torch.zeros(batch_size, device=data_src.device)
                 src_domain_label = src_domain_label.long()
-                mmd_loss += loss_domain(src_domain_output, src_domain_label)
+                # mmd_loss += loss_domain(src_domain_output, src_domain_label)
                 
                 tgt_domain_output = self.discriminator2(GRL.apply(data_tgt_son2.view(data_tgt_son2.size(0), -1),alpha))
                 tgt_domain_label = torch.ones(batch_size, device=data_src.device)
                 tgt_domain_label = tgt_domain_label.long()
-                mmd_loss += loss_domain(tgt_domain_output, tgt_domain_label)
+                # mmd_loss += loss_domain(tgt_domain_output, tgt_domain_label)
                 
 #                 mmd_loss += mmd(data_src.view(data_src.size(0), -1), data_tgt_son2.view(data_tgt_son2.size(0), -1))
 
