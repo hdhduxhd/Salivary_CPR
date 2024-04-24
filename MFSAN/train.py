@@ -133,7 +133,7 @@ for i in range(1, args.num_iters+1):
     optimizer.step()
 
     if i==1 or i % args.log_interval == 0:
-        print('Train source1 iter: {} [({:.0f}%)]\tLoss: {:.6f}\tsoft_Loss: {:.6f}\tmmd_Loss: {:.6f}\tl1_Loss: {:.6f}'.format(i, 100. * i / args.num_iters, loss.item(), mse_loss.item(), mmd_loss.item(), l1_loss.item()))
+        print('Train source1 iter: {} [({:.0f}%)]\tLoss: {:.6f}\tsoft_Loss: {:.6f}\tmmd_Loss: {:.6f}\tl1_Loss: {:.6f}'.format(i, 100. * i / args.num_iters, loss.item(), mse_loss.item(), 0, l1_loss.item()))
         if args.use_wandb:
             wandb_run.log({"source1 loss":loss.item()})
 
@@ -160,7 +160,7 @@ for i in range(1, args.num_iters+1):
     optimizer.step()
 
     if i==1 or i % args.log_interval == 0:
-        print('Train source2 iter: {} [({:.0f}%)]\tLoss: {:.6f}\tsoft_Loss: {:.6f}\tmmd_Loss: {:.6f}\tl1_Loss: {:.6f}'.format(i, 100. * i / args.num_iters, loss.item(), mse_loss.item(), mmd_loss.item(), l1_loss.item()))
+        print('Train source2 iter: {} [({:.0f}%)]\tLoss: {:.6f}\tsoft_Loss: {:.6f}\tmmd_Loss: {:.6f}\tl1_Loss: {:.6f}'.format(i, 100. * i / args.num_iters, loss.item(), mse_loss.item(), 0, l1_loss.item()))
         if args.use_wandb:
             wandb_run.log({"source2 loss":loss.item()})
     
